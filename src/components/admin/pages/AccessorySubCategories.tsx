@@ -5,7 +5,11 @@ const AccessorySubCategoriesPage = () => {
     return (
         <GenericResourcePage
             title="Accessory Sub Categories"
+            entityLabel="Subcategory"
+            entityLabelPlural="Accessory subcategories"
+            sectionTitle="All accessory subcategories"
             tableName="accessory_sub_categories"
+            searchKeys={['name', 'category_id']}
             columns={[
                 { key: 'name', label: 'Name', type: 'text' },
                 { key: 'category_id', label: 'Category', type: 'text' },

@@ -5,7 +5,10 @@ const PermissionsPage = () => {
     return (
         <GenericResourcePage
             title="Permissions"
+            entityLabel="Permission"
+            entityLabelPlural="Permissions"
             tableName="permissions"
+            searchKeys={['name', 'slug', 'description']}
             columns={[
                 { key: 'name', label: 'Permission', type: 'text' },
                 { key: 'description', label: 'Description', type: 'text' },

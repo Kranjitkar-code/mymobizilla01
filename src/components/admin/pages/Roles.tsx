@@ -5,7 +5,10 @@ const RolesPage = () => {
     return (
         <GenericResourcePage
             title="Roles"
+            entityLabel="Role"
+            entityLabelPlural="Roles"
             tableName="roles"
+            searchKeys={['name', 'slug', 'description']}
             columns={[
                 { key: 'name', label: 'Role', type: 'text' },
                 { key: 'description', label: 'Description', type: 'text' },

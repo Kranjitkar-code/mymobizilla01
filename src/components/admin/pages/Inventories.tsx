@@ -5,6 +5,9 @@ const InventoriesPage = () => {
     return (
         <GenericResourcePage
             title="Inventories"
+            entityLabel="Inventory Item"
+            entityLabelPlural="Inventory items"
+            sectionTitle="All inventory items"
             tableName="inventories"
             columns={[
                 { key: 'name', label: 'Item Name', type: 'text' },

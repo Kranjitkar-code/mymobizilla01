@@ -5,7 +5,10 @@ const VideosPage = () => {
     return (
         <GenericResourcePage
             title="Our Video Lists"
+            entityLabel="Video"
+            entityLabelPlural="Videos"
             tableName="videos"
+            searchKey="title"
             columns={[
                 { key: 'thumbnail_url', label: 'Thumbnail', type: 'image' },
                 { key: 'title', label: 'Title', type: 'text' },

@@ -102,6 +102,8 @@ export default function TrainingAdmin() {
     return (
         <GenericResourcePage
             title="Training Courses"
+            entityLabel="Course"
+            entityLabelPlural="Courses"
             tableName="training_courses"
             searchKey="title"
             headerActions={importButton}

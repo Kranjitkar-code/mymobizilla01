@@ -4,10 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Plus, Trash2, Save, Loader2, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, Loader2, RefreshCw } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import SupabaseFaqService, { FaqItem } from '@/services/supabaseFaqService';
 import { SchemaHelpDialog } from "../SchemaHelpDialog";
+import { AdminCrudPage, AdminCrudToolbar, AdminCrudEmptyPanel } from '@/components/admin/crud/AdminCrudShell';
 
 const DEFAULT_FAQS = [
     {
@@ -159,21 +160,23 @@ const FaqPage = () => {
     };
 
     return (
-        <div className="space-y-6 p-6">
-            <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold tracking-tight">FAQ Management</h1>
-                <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => setShowSchemaHelp(true)}>
-                        Database Setup
-                    </Button>
-                    <Button variant="outline" onClick={handleLoadDefaults}>
-                        <RefreshCw className="mr-2 h-4 w-4" /> Load Defaults
-                    </Button>
-                    <Button onClick={() => setIsAdding(!isAdding)}>
-                        <Plus className="mr-2 h-4 w-4" /> Add FAQ
-                    </Button>
-                </div>
-            </div>
+        <AdminCrudPage>
+            <AdminCrudToolbar
+                title="FAQ Management"
+                actions={
+                    <>
+                        <Button variant="outline" onClick={() => setShowSchemaHelp(true)}>
+                            Database Setup
+                        </Button>
+                        <Button onClick={() => setIsAdding(!isAdding)}>
+                            <Plus className="mr-2 h-4 w-4" /> Add FAQ
+                        </Button>
+                        <Button variant="outline" onClick={handleLoadDefaults}>
+                            <RefreshCw className="mr-2 h-4 w-4" /> Load Defaults
+                        </Button>
+                    </>
+                }
+            />
 
             <SchemaHelpDialog open={showSchemaHelp} onOpenChange={setShowSchemaHelp} />
 
@@ -200,8 +203,8 @@ const FaqPage = () => {
                             />
                         </div>
                         <div className="flex justify-end gap-2">
-                            <Button variant="ghost" onClick={() => setIsAdding(false)}>Cancel</Button>
-                            <Button onClick={handleAddFaq}>Save FAQ</Button>
+                            <Button variant="outline" onClick={() => setIsAdding(false)}>Cancel</Button>
+                            <Button onClick={handleAddFaq}>Save</Button>
                         </div>
                     </CardContent>
                 </Card>
@@ -213,10 +216,10 @@ const FaqPage = () => {
                         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                     </div>
                 ) : faqs.length === 0 ? (
-                    <div className="text-center py-12 text-muted-foreground bg-card rounded-lg border border-dashed">
-                        <p>No FAQs found.</p>
-                        <p className="text-sm mt-2">Click "Load Defaults" to populate with standard questions.</p>
-                    </div>
+                    <AdminCrudEmptyPanel
+                        message="No FAQs yet."
+                        hint='Use “Load defaults” to add standard questions, or “Add FAQ” to create your own.'
+                    />
                 ) : (
                     <Accordion type="single" collapsible className="w-full space-y-2">
                         {faqs.map((faq) => (
@@ -242,7 +245,7 @@ const FaqPage = () => {
                     </Accordion>
                 )}
             </div>
-        </div>
+        </AdminCrudPage>
     );
 };
 

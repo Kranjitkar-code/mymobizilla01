@@ -5,6 +5,9 @@ const MachineryWorkingNaturesPage = () => {
     return (
         <GenericResourcePage
             title="Machinery Working Natures"
+            entityLabel="Working Nature"
+            entityLabelPlural="Machinery working natures"
+            sectionTitle="All machinery working natures"
             tableName="machinery_working_natures"
             columns={[
                 { key: 'name', label: 'Name', type: 'text' },

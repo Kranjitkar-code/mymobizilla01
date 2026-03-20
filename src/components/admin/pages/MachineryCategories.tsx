@@ -5,6 +5,9 @@ const MachineryCategoriesPage = () => {
     return (
         <GenericResourcePage
             title="Machinery Categories"
+            entityLabel="Category"
+            entityLabelPlural="Machinery categories"
+            sectionTitle="All machinery categories"
             tableName="machinery_categories"
             columns={[
                 { key: 'image_url', label: 'Image', type: 'image' },

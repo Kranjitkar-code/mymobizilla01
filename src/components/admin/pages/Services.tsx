@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Save, Loader2, Plus, Trash2, Wrench } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { AdminCrudPage } from "@/components/admin/crud/AdminCrudShell";
 
 interface Service {
     id: string;
@@ -113,13 +114,16 @@ export default function ServicesPage() {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
+            <AdminCrudPage>
+                <div className="flex h-64 items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+            </AdminCrudPage>
         );
     }
 
     return (
+        <AdminCrudPage>
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
@@ -224,5 +228,6 @@ export default function ServicesPage() {
                 </Button>
             </div>
         </div>
+        </AdminCrudPage>
     );
 }

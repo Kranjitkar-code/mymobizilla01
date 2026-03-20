@@ -5,6 +5,8 @@ const TeamMembersPage = () => {
     return (
         <GenericResourcePage
             title="Team Members"
+            entityLabel="Team Member"
+            entityLabelPlural="Team Members"
             tableName="team_members"
             columns={[
                 { key: 'photo_url', label: 'Photo', type: 'image' },

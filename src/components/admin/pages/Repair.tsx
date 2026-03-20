@@ -5,6 +5,9 @@ const RepairPage = () => {
     return (
         <GenericResourcePage
             title="Repair Services"
+            entityLabel="Service"
+            entityLabelPlural="Repair services"
+            sectionTitle="All repair services"
             tableName="repair_services"
             columns={[
                 { key: 'image_url', label: 'Image', type: 'image' },

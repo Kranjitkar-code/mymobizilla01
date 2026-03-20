@@ -5,6 +5,8 @@ const TestimonialsPage = () => {
     return (
         <GenericResourcePage
             title="Testimonials"
+            entityLabel="Testimonial"
+            entityLabelPlural="Testimonials"
             tableName="testimonials"
             columns={[
                 { key: 'name', label: 'Name', type: 'text' },

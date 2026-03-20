@@ -1,8 +1,13 @@
 import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Edit, Plus, Search, Filter } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Edit, Plus, Filter } from 'lucide-react';
+import {
+    AdminCrudPage,
+    AdminCrudToolbar,
+    AdminCrudSearchInput,
+} from '@/components/admin/crud/AdminCrudShell';
 
 interface Sku {
     id: string;
@@ -26,76 +31,86 @@ const initialSkus: Sku[] = [
 
 const SkusPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
-    const [skus, setSkus] = useState<Sku[]>(initialSkus);
+    const [skus] = useState<Sku[]>(initialSkus);
 
-    const filteredSkus = skus.filter(sku =>
-        sku.model.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredSkus = skus.filter((sku) =>
+        sku.model.toLowerCase().includes(searchTerm.toLowerCase()),
     );
 
     return (
-        <div className="space-y-6 p-6">
-            <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold tracking-tight">Skus</h1>
-                <Button className="bg-green-600 hover:bg-green-700 text-white">
-                    <Plus className="mr-2 h-4 w-4" /> New sku
-                </Button>
-            </div>
-
-            <div className="bg-card rounded-lg border shadow-sm">
-                <div className="p-4 flex items-center justify-end gap-2 border-b">
-                    <div className="relative w-72">
-                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Search"
-                            className="pl-8"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                    <Button variant="outline" size="icon">
-                        <Filter className="h-4 w-4" />
+        <AdminCrudPage>
+            <AdminCrudToolbar
+                title="SKUs"
+                actions={
+                    <Button>
+                        <Plus className="mr-2 h-4 w-4" /> Add SKU
                     </Button>
-                </div>
+                }
+            />
 
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-[300px]">Model</TableHead>
-                            <TableHead>Color</TableHead>
-                            <TableHead>Storage (GB)</TableHead>
-                            <TableHead>Memory (GB)</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {filteredSkus.map((sku) => (
-                            <TableRow key={sku.id}>
-                                <TableCell className="font-medium">{sku.model}</TableCell>
-                                <TableCell>
-                                    <div className="flex gap-1">
-                                        {sku.colors.map((color, index) => (
-                                            <div
-                                                key={index}
-                                                className="h-6 w-6 rounded-full border shadow-sm"
-                                                style={{ backgroundColor: color }}
-                                                title={color}
-                                            />
-                                        ))}
-                                    </div>
-                                </TableCell>
-                                <TableCell>{sku.storage}</TableCell>
-                                <TableCell>{sku.memory}</TableCell>
-                                <TableCell className="text-right">
-                                    <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-700 hover:bg-green-50">
-                                        <Edit className="mr-2 h-4 w-4" /> Edit
-                                    </Button>
-                                </TableCell>
+            <Card>
+                <CardHeader className="pb-3">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                        <CardTitle className="text-lg font-semibold">All SKUs</CardTitle>
+                        <div className="flex w-full flex-wrap items-center justify-end gap-2 lg:w-auto">
+                            <div className="w-full min-w-[220px] sm:w-72">
+                                <AdminCrudSearchInput
+                                    value={searchTerm}
+                                    onChange={setSearchTerm}
+                                    placeholder="Search SKUs…"
+                                />
+                            </div>
+                            <Button variant="outline" size="icon" type="button" aria-label="Filter">
+                                <Filter className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent className="p-0 md:px-6 md:pb-6">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="h-11 w-[300px] font-medium text-muted-foreground">Model</TableHead>
+                                <TableHead className="h-11 font-medium text-muted-foreground">Color</TableHead>
+                                <TableHead className="h-11 font-medium text-muted-foreground">Storage (GB)</TableHead>
+                                <TableHead className="h-11 font-medium text-muted-foreground">Memory (GB)</TableHead>
+                                <TableHead className="h-11 text-right font-medium text-muted-foreground">Actions</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </div>
-        </div>
+                        </TableHeader>
+                        <TableBody>
+                            {filteredSkus.map((sku) => (
+                                <TableRow key={sku.id} className="align-middle">
+                                    <TableCell className="py-3 font-medium">{sku.model}</TableCell>
+                                    <TableCell className="py-3">
+                                        <div className="flex gap-1">
+                                            {sku.colors.map((color, index) => (
+                                                <div
+                                                    key={index}
+                                                    className="h-6 w-6 rounded-full border shadow-sm"
+                                                    style={{ backgroundColor: color }}
+                                                    title={color}
+                                                />
+                                            ))}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="py-3">{sku.storage}</TableCell>
+                                    <TableCell className="py-3">{sku.memory}</TableCell>
+                                    <TableCell className="py-3 text-right">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-green-600 hover:bg-green-50 hover:text-green-700"
+                                        >
+                                            <Edit className="mr-2 h-4 w-4" /> Edit
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </AdminCrudPage>
     );
 };
 

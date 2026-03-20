@@ -5,7 +5,11 @@ const MachinerySubCategoriesPage = () => {
     return (
         <GenericResourcePage
             title="Machinery Sub Categories"
+            entityLabel="Subcategory"
+            entityLabelPlural="Machinery subcategories"
+            sectionTitle="All machinery subcategories"
             tableName="machinery_sub_categories"
+            searchKeys={['name', 'category_id']}
             columns={[
                 { key: 'name', label: 'Name', type: 'text' },
                 { key: 'category_id', label: 'Category', type: 'text' },

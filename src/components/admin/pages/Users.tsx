@@ -5,7 +5,10 @@ const UsersPage = () => {
     return (
         <GenericResourcePage
             title="Users"
+            entityLabel="User"
+            entityLabelPlural="Users"
             tableName="users"
+            searchKeys={['name', 'email', 'role']}
             columns={[
                 { key: 'name', label: 'Name', type: 'text' },
                 { key: 'email', label: 'Email', type: 'text' },
@@ -17,7 +20,6 @@ const UsersPage = () => {
                 { key: 'role', label: 'Role', type: 'text', required: true },
                 { key: 'phone', label: 'Phone', type: 'text' },
             ]}
-            searchKey="email"
         />
     );
 };

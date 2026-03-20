@@ -5,6 +5,8 @@ const WhyChooseUsPage = () => {
     return (
         <GenericResourcePage
             title="Why Choose Us"
+            entityLabel="Highlight"
+            entityLabelPlural="Highlights"
             tableName="why_choose_us"
             columns={[
                 { key: 'icon_url', label: 'Icon', type: 'image' },

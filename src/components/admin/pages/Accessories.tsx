@@ -5,6 +5,8 @@ const AccessoriesPage = () => {
     return (
         <GenericResourcePage
             title="Accessories"
+            entityLabel="Accessory"
+            entityLabelPlural="Accessories"
             tableName="accessories"
             columns={[
                 { key: 'image_url', label: 'Image', type: 'image' },

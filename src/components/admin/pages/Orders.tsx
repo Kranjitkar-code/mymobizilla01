@@ -5,7 +5,10 @@ const OrdersPage = () => {
     return (
         <GenericResourcePage
             title="Orders"
+            entityLabel="Order"
+            entityLabelPlural="Orders"
             tableName="orders"
+            searchKeys={['id', 'customer_name', 'status', 'total']}
             columns={[
                 { key: 'id', label: 'Order ID', type: 'text' },
                 { key: 'customer_name', label: 'Customer', type: 'text' },
@@ -21,7 +24,6 @@ const OrdersPage = () => {
                 { key: 'total', label: 'Total', type: 'number' },
                 { key: 'notes', label: 'Notes', type: 'textarea' },
             ]}
-            searchKey="customer_name"
         />
     );
 };

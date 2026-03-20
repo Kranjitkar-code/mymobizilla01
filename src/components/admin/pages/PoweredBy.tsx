@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Save, Loader2, Plus, Trash2, Upload, Building2 } from "lucide-react";
+import { Save, Loader2, Plus, Trash2, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
     Dialog,
@@ -14,6 +14,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
+import { AdminCrudPage, AdminCrudToolbar } from "@/components/admin/crud/AdminCrudShell";
 
 interface Partner {
     id: string;
@@ -169,20 +170,21 @@ export default function PoweredByPage() {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
+            <AdminCrudPage>
+                <div className="flex h-64 items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+            </AdminCrudPage>
         );
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Powered By Partners</h1>
-                    <p className="text-muted-foreground">Manage your business partners and sponsors</p>
-                </div>
-                <div className="flex gap-2">
+        <AdminCrudPage>
+            <AdminCrudToolbar
+                title="Powered By Partners"
+                description="Manage your business partners and sponsors"
+                actions={
+                    <>
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                         <DialogTrigger asChild>
                             <Button onClick={() => setEditingPartner(null)}>
@@ -192,7 +194,7 @@ export default function PoweredByPage() {
                         </DialogTrigger>
                         <DialogContent className="max-w-md">
                             <DialogHeader>
-                                <DialogTitle>{editingPartner ? "Edit Partner" : "Add New Partner"}</DialogTitle>
+                                <DialogTitle>{editingPartner ? "Edit Partner" : "Add Partner"}</DialogTitle>
                                 <DialogDescription>
                                     {editingPartner ? "Update partner information" : "Add a new business partner or sponsor"}
                                 </DialogDescription>
@@ -247,12 +249,12 @@ export default function PoweredByPage() {
                                     </div>
                                 )}
                             </div>
-                            <DialogFooter>
+                            <DialogFooter className="gap-2 border-t pt-4 sm:gap-0">
                                 <Button variant="outline" onClick={handleDialogClose}>
                                     Cancel
                                 </Button>
                                 <Button onClick={editingPartner ? handleUpdatePartner : handleAddPartner}>
-                                    {editingPartner ? "Update Partner" : "Add Partner"}
+                                    Save
                                 </Button>
                             </DialogFooter>
                         </DialogContent>
@@ -273,8 +275,9 @@ export default function PoweredByPage() {
                             )}
                         </Button>
                     )}
-                </div>
-            </div>
+                    </>
+                }
+            />
 
             {partners.length === 0 ? (
                 <Card className="p-12">
@@ -284,7 +287,7 @@ export default function PoweredByPage() {
                         <p className="mb-4">Start by adding your first business partner or sponsor</p>
                         <Button onClick={() => setIsDialogOpen(true)}>
                             <Plus className="mr-2 h-4 w-4" />
-                            Add Your First Partner
+                            Add Partner
                         </Button>
                     </div>
                 </Card>
@@ -340,6 +343,6 @@ export default function PoweredByPage() {
                     ))}
                 </div>
             )}
-        </div>
+        </AdminCrudPage>
     );
 }

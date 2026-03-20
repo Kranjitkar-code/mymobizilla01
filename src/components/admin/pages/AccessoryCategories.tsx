@@ -5,6 +5,9 @@ const AccessoryCategoriesPage = () => {
     return (
         <GenericResourcePage
             title="Accessory Categories"
+            entityLabel="Category"
+            entityLabelPlural="Accessory categories"
+            sectionTitle="All accessory categories"
             tableName="accessory_categories"
             columns={[
                 { key: 'image_url', label: 'Image', type: 'image' },

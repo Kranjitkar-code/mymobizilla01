@@ -5,7 +5,11 @@ const SecondhandInventoryPage = () => {
     return (
         <GenericResourcePage
             title="Secondhand Inventory"
+            entityLabel="Listing"
+            entityLabelPlural="Secondhand listings"
+            sectionTitle="All secondhand listings"
             tableName="secondhand_inventory"
+            searchKeys={['name', 'brand', 'model', 'status']}
             columns={[
                 { key: 'image_url', label: 'Image', type: 'image' },
                 { key: 'name', label: 'Device Name', type: 'text' },
@@ -23,7 +27,6 @@ const SecondhandInventoryPage = () => {
                 { key: 'description', label: 'Description', type: 'textarea' },
                 { key: 'image_url', label: 'Image', type: 'image', bucketName: 'product-images' },
             ]}
-            searchKey="name"
         />
     );
 };

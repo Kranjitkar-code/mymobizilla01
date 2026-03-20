@@ -5,6 +5,9 @@ const MachineryBrandsPage = () => {
     return (
         <GenericResourcePage
             title="Machinery Brands"
+            entityLabel="Brand"
+            entityLabelPlural="Machinery brands"
+            sectionTitle="All machinery brands"
             tableName="machinery_brands"
             columns={[
                 { key: 'logo_url', label: 'Logo', type: 'image' },

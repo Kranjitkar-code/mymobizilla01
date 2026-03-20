@@ -1,28 +1,56 @@
-import React, { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Trash2, Loader2, Edit, Image as ImageIcon } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
+import React, { useState, useEffect, useMemo } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Plus, Trash2, Loader2, Edit } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/components/ui/use-toast';
 import { GenericSupabaseService, ResourceField, ResourceColumn } from '@/services/genericSupabaseService';
 import { SchemaHelpDialog } from './SchemaHelpDialog';
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
+    AdminCrudPage,
+    AdminCrudToolbar,
+    AdminCrudSectionCard,
+    AdminCrudSearchInput,
+    AdminCrudTableLoadingRow,
+    AdminCrudTableEmptyRow,
+    AdminCrudImageCell,
+} from '@/components/admin/crud/AdminCrudShell';
 
-interface GenericResourcePageProps {
+export interface GenericResourcePageProps {
     title: string;
     tableName: string;
     columns: ResourceColumn[];
     fields: ResourceField[];
+    /** Primary search field (used when searchKeys omitted). */
     searchKey?: string;
+    /** If set, row matches when any key contains the search term. */
+    searchKeys?: string[];
     onBeforeSave?: (data: any) => any;
     onBeforeEdit?: (data: any) => any;
     headerActions?: React.ReactNode;
     fallbackData?: any[];
+    /** Singular label for buttons and modals, e.g. "Brand", "Testimonial". */
+    entityLabel?: string;
+    /** Plural for section title and copy, e.g. "Brands". Defaults to `${entityLabel}s`. */
+    entityLabelPlural?: string;
+    sectionTitle?: string;
+    searchPlaceholder?: string;
+    emptyStateMessage?: string;
+    addButtonLabel?: string;
+    modalAddTitle?: string;
+    modalEditTitle?: string;
 }
 
 const GenericResourcePage: React.FC<GenericResourcePageProps> = ({
@@ -31,10 +59,19 @@ const GenericResourcePage: React.FC<GenericResourcePageProps> = ({
     columns,
     fields,
     searchKey = 'name',
+    searchKeys,
     onBeforeSave,
     onBeforeEdit,
     headerActions,
-    fallbackData = []
+    fallbackData = [],
+    entityLabel,
+    entityLabelPlural,
+    sectionTitle: sectionTitleProp,
+    searchPlaceholder: searchPlaceholderProp,
+    emptyStateMessage: emptyStateMessageProp,
+    addButtonLabel: addButtonLabelProp,
+    modalAddTitle: modalAddTitleProp,
+    modalEditTitle: modalEditTitleProp,
 }) => {
     const [items, setItems] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -45,6 +82,41 @@ const GenericResourcePage: React.FC<GenericResourcePageProps> = ({
     const [submitting, setSubmitting] = useState(false);
     const [showSchemaHelp, setShowSchemaHelp] = useState(false);
     const { toast } = useToast();
+
+    const derived = useMemo(() => {
+        if (!entityLabel) {
+            return {
+                sectionTitle: sectionTitleProp ?? 'All items',
+                searchPlaceholder: searchPlaceholderProp ?? 'Search…',
+                emptyStateMessage: emptyStateMessageProp ?? 'No items found.',
+                addButtonLabel: addButtonLabelProp ?? 'Add new',
+                modalAddTitle: modalAddTitleProp ?? 'Add item',
+                modalEditTitle: modalEditTitleProp ?? 'Edit item',
+            };
+        }
+        const plural = entityLabelPlural ?? `${entityLabel}s`;
+        const pluralLower = plural.toLowerCase();
+        return {
+            sectionTitle: sectionTitleProp ?? `All ${plural}`,
+            searchPlaceholder: searchPlaceholderProp ?? `Search ${pluralLower}…`,
+            emptyStateMessage:
+                emptyStateMessageProp ?? `No ${pluralLower} yet. Add one to get started.`,
+            addButtonLabel: addButtonLabelProp ?? `Add ${entityLabel}`,
+            modalAddTitle: modalAddTitleProp ?? `Add ${entityLabel}`,
+            modalEditTitle: modalEditTitleProp ?? `Edit ${entityLabel}`,
+        };
+    }, [
+        entityLabel,
+        entityLabelPlural,
+        sectionTitleProp,
+        searchPlaceholderProp,
+        emptyStateMessageProp,
+        addButtonLabelProp,
+        modalAddTitleProp,
+        modalEditTitleProp,
+    ]);
+
+    const filterKeys = searchKeys?.length ? searchKeys : [searchKey];
 
     useEffect(() => {
         loadItems();
@@ -90,16 +162,15 @@ const GenericResourcePage: React.FC<GenericResourcePageProps> = ({
             const url = await GenericSupabaseService.uploadImage(bucket, file);
             handleInputChange(key, url);
         } catch (error) {
-            console.error("Upload failed", error);
-            toast({ title: "Upload Failed", description: "Could not upload image.", variant: "destructive" });
+            console.error('Upload failed', error);
+            toast({ title: 'Upload failed', description: 'Could not upload image.', variant: 'destructive' });
         }
     };
 
     const handleSubmit = async () => {
-        // Validate required
         for (const field of fields) {
-            if (field.required && !formData[field.key]) {
-                toast({ title: "Error", description: `${field.label} is required`, variant: "destructive" });
+            if (field.required && (formData[field.key] === undefined || formData[field.key] === '' || formData[field.key] === null)) {
+                toast({ title: 'Error', description: `${field.label} is required`, variant: 'destructive' });
                 return;
             }
         }
@@ -113,167 +184,200 @@ const GenericResourcePage: React.FC<GenericResourcePageProps> = ({
 
             if (editingItem) {
                 await GenericSupabaseService.update(tableName, editingItem.id, dataToSave);
-                toast({ title: "Success", description: "Item updated successfully" });
+                toast({ title: 'Saved', description: 'Changes were saved.' });
             } else {
                 await GenericSupabaseService.create(tableName, dataToSave);
-                toast({ title: "Success", description: "Item created successfully" });
+                toast({ title: 'Saved', description: 'New entry was created.' });
             }
             setIsDialogOpen(false);
             loadItems();
         } catch (error: any) {
-            console.error("Submit failed", error);
+            console.error('Submit failed', error);
             if (error?.code === '42P01' || error?.message?.includes('relation') || error?.message?.includes('does not exist')) {
                 setShowSchemaHelp(true);
             }
-            toast({ title: "Error", description: "Operation failed. Database setup may be required.", variant: "destructive" });
+            toast({
+                title: 'Error',
+                description: 'Operation failed. Database setup may be required.',
+                variant: 'destructive',
+            });
         } finally {
             setSubmitting(false);
         }
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure?')) return;
+        if (!confirm('Are you sure you want to delete this row?')) return;
         try {
             await GenericSupabaseService.delete(tableName, id);
-            toast({ title: "Success", description: "Item deleted" });
+            toast({ title: 'Deleted', description: 'The row was removed.' });
             loadItems();
         } catch (error) {
-            console.error("Delete failed", error);
-            toast({ title: "Error", description: "Delete failed", variant: "destructive" });
+            console.error('Delete failed', error);
+            toast({ title: 'Error', description: 'Delete failed', variant: 'destructive' });
         }
     };
 
-    const filteredItems = items.filter(item =>
-        item[searchKey]?.toString().toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredItems = items.filter((item) =>
+        filterKeys.some((k) => {
+            const v = item[k];
+            if (v === undefined || v === null) return false;
+            return String(v).toLowerCase().includes(searchTerm.toLowerCase());
+        }),
     );
 
+    const dialogTitle = editingItem ? derived.modalEditTitle : derived.modalAddTitle;
+
     return (
-        <div className="space-y-6 p-6">
-            <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
-                <div className="flex gap-2">
-                    {headerActions}
-                    <Button variant="outline" onClick={() => setShowSchemaHelp(true)}>
-                        Database Setup
-                    </Button>
-                    <Button onClick={() => handleOpenDialog()}>
-                        <Plus className="mr-2 h-4 w-4" /> Add New
-                    </Button>
-                </div>
-            </div>
+        <AdminCrudPage>
+            <AdminCrudToolbar
+                title={title}
+                actions={
+                    <>
+                        <Button variant="outline" onClick={() => setShowSchemaHelp(true)}>
+                            Database Setup
+                        </Button>
+                        <Button onClick={() => handleOpenDialog()}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            {derived.addButtonLabel}
+                        </Button>
+                        {headerActions}
+                    </>
+                }
+            />
 
             <SchemaHelpDialog open={showSchemaHelp} onOpenChange={setShowSchemaHelp} />
 
-            <Card>
-                <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                        <CardTitle>All Items</CardTitle>
-                        <div className="relative w-64">
-                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Search..."
-                                className="pl-8"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
+            <AdminCrudSectionCard
+                title={derived.sectionTitle}
+                search={
+                    <AdminCrudSearchInput
+                        value={searchTerm}
+                        onChange={setSearchTerm}
+                        placeholder={derived.searchPlaceholder}
+                    />
+                }
+            >
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            {columns.map((col) => (
+                                <TableHead key={col.key} className="h-11 font-medium text-muted-foreground">
+                                    {col.label}
+                                </TableHead>
+                            ))}
+                            <TableHead className="h-11 w-[104px] text-right font-medium text-muted-foreground">
+                                Actions
+                            </TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {loading ? (
+                            <AdminCrudTableLoadingRow colSpan={columns.length + 1} />
+                        ) : filteredItems.length === 0 ? (
+                            <AdminCrudTableEmptyRow
+                                colSpan={columns.length + 1}
+                                message={derived.emptyStateMessage}
                             />
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                {columns.map(col => (
-                                    <TableHead key={col.key}>{col.label}</TableHead>
-                                ))}
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {loading ? (
-                                <TableRow>
-                                    <TableCell colSpan={columns.length + 1} className="text-center py-8">
-                                        <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
-                                    </TableCell>
-                                </TableRow>
-                            ) : filteredItems.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={columns.length + 1} className="text-center py-8 text-muted-foreground">
-                                        No items found.
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                filteredItems.map((item) => (
-                                    <TableRow key={item.id}>
-                                        {columns.map(col => (
-                                            <TableCell key={col.key}>
-                                                {col.type === 'image' ? (
-                                                    item[col.key] ? <img src={item[col.key]} alt="img" className="h-10 w-10 object-contain bg-gray-50 rounded" /> : <div className="h-10 w-10 bg-gray-100 rounded flex items-center justify-center"><ImageIcon className="h-4 w-4 text-gray-400" /></div>
-                                                ) : col.type === 'boolean' ? (
-                                                    <Switch checked={item[col.key]} disabled />
-                                                ) : (
-                                                    item[col.key]
-                                                )}
-                                            </TableCell>
-                                        ))}
-                                        <TableCell className="text-right">
-                                            <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(item)}>
-                                                <Edit className="h-4 w-4" />
-                                            </Button>
-                                            <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)} className="text-red-500 hover:text-red-600 hover:bg-red-50">
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
+                        ) : (
+                            filteredItems.map((item) => (
+                                <TableRow key={item.id} className="align-middle">
+                                    {columns.map((col) => (
+                                        <TableCell key={col.key} className="py-3">
+                                            {col.type === 'image' ? (
+                                                <AdminCrudImageCell src={item[col.key]} alt="" />
+                                            ) : col.type === 'boolean' ? (
+                                                <Switch checked={!!item[col.key]} disabled aria-readonly />
+                                            ) : (
+                                                item[col.key]
+                                            )}
                                         </TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+                                    ))}
+                                    <TableCell className="py-3 text-right">
+                                        <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(item)}>
+                                            <Edit className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => handleDelete(item.id)}
+                                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
+            </AdminCrudSectionCard>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>{editingItem ? 'Edit Item' : 'Add New Item'}</DialogTitle>
+                <DialogContent className="gap-0 sm:max-w-lg">
+                    <DialogHeader className="space-y-1 pb-2">
+                        <DialogTitle className="text-xl font-semibold tracking-tight">{dialogTitle}</DialogTitle>
                     </DialogHeader>
-                    <ScrollArea className="max-h-[60vh] pr-4 py-4">
-                        <div className="space-y-4">
-                            {fields.map(field => (
+                    <ScrollArea className="max-h-[60vh] pr-4">
+                        <div className="space-y-4 py-4">
+                            {fields.map((field) => (
                                 <div key={field.key} className="space-y-2">
-                                    <Label>{field.label}</Label>
+                                    <Label className="text-sm font-medium">{field.label}</Label>
                                     {field.type === 'text' && (
                                         <Input
-                                            value={formData[field.key] || ''}
+                                            value={formData[field.key] ?? ''}
                                             onChange={(e) => handleInputChange(field.key, e.target.value)}
                                         />
                                     )}
                                     {field.type === 'number' && (
                                         <Input
                                             type="number"
-                                            value={formData[field.key] || ''}
+                                            value={formData[field.key] ?? ''}
                                             onChange={(e) => handleInputChange(field.key, e.target.value)}
                                         />
                                     )}
                                     {field.type === 'textarea' && (
                                         <Textarea
-                                            value={formData[field.key] || ''}
+                                            value={formData[field.key] ?? ''}
                                             onChange={(e) => handleInputChange(field.key, e.target.value)}
                                         />
                                     )}
                                     {field.type === 'boolean' && (
-                                        <div className="flex items-center space-x-2">
+                                        <div className="flex items-center gap-2">
                                             <Switch
-                                                checked={formData[field.key] || false}
+                                                checked={!!formData[field.key]}
                                                 onCheckedChange={(checked) => handleInputChange(field.key, checked)}
                                             />
-                                            <span>{formData[field.key] ? 'Yes' : 'No'}</span>
+                                            <span className="text-sm text-muted-foreground">
+                                                {formData[field.key] ? 'Yes' : 'No'}
+                                            </span>
                                         </div>
+                                    )}
+                                    {field.type === 'select' && field.options && (
+                                        <Select
+                                            value={formData[field.key] ? String(formData[field.key]) : undefined}
+                                            onValueChange={(v) => handleInputChange(field.key, v)}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {field.options.map((opt) => (
+                                                    <SelectItem key={opt.value} value={opt.value}>
+                                                        {opt.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     )}
                                     {field.type === 'image' && (
                                         <div className="space-y-2">
                                             {formData[field.key] && (
-                                                <img src={formData[field.key]} alt="Preview" className="h-20 w-20 object-contain bg-gray-50 rounded border" />
+                                                <img
+                                                    src={formData[field.key]}
+                                                    alt="Preview"
+                                                    className="h-20 w-20 rounded-md border bg-muted/40 object-contain p-1"
+                                                />
                                             )}
                                             <Input
                                                 type="file"
@@ -290,8 +394,10 @@ const GenericResourcePage: React.FC<GenericResourcePageProps> = ({
                             ))}
                         </div>
                     </ScrollArea>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                    <DialogFooter className="gap-2 border-t pt-4 sm:gap-0">
+                        <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                            Cancel
+                        </Button>
                         <Button onClick={handleSubmit} disabled={submitting}>
                             {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                             Save
@@ -299,7 +405,7 @@ const GenericResourcePage: React.FC<GenericResourcePageProps> = ({
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div>
+        </AdminCrudPage>
     );
 };
 

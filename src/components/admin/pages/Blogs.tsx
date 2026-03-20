@@ -5,7 +5,11 @@ const BlogsPage = () => {
     return (
         <GenericResourcePage
             title="Blogs"
+            entityLabel="Blog Post"
+            entityLabelPlural="Blog posts"
+            sectionTitle="All blog posts"
             tableName="blogs"
+            searchKey="title"
             columns={[
                 { key: 'image_url', label: 'Cover', type: 'image' },
                 { key: 'title', label: 'Title', type: 'text' },

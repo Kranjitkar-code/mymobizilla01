@@ -5,6 +5,9 @@ const AccessoryBrandsPage = () => {
     return (
         <GenericResourcePage
             title="Accessory Brands"
+            entityLabel="Brand"
+            entityLabelPlural="Accessory brands"
+            sectionTitle="All accessory brands"
             tableName="accessory_brands"
             columns={[
                 { key: 'logo_url', label: 'Logo', type: 'image' },

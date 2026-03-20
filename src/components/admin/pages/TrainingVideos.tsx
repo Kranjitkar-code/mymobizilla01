@@ -5,6 +5,9 @@ const TrainingVideosPage = () => {
     return (
         <GenericResourcePage
             title="Training Videos"
+            entityLabel="Video"
+            entityLabelPlural="Training videos"
+            sectionTitle="All training videos"
             tableName="training_videos"
             searchKey="title"
             fallbackData={[
