@@ -184,6 +184,10 @@ const BRANDS = [
 
 type ViewState = 'brands' | 'categories' | 'models';
 
+export interface DeviceBrowserSectionProps {
+  defaultServiceType?: 'repair' | 'buyback' | null;
+}
+
 interface BrandData {
   name: string;
   logo: string;
@@ -193,14 +197,12 @@ interface BrandData {
   directModels?: string[];
 }
 
-export default function DeviceBrowserSection() {
+export default function DeviceBrowserSection({ defaultServiceType = null }: DeviceBrowserSectionProps) {
   const navigate = useNavigate();
   const [viewState, setViewState] = useState<ViewState>('brands');
   const [selectedBrand, setSelectedBrand] = useState<BrandData | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<{ name: string; folder: string } | null>(null);
   const [categoryModels, setCategoryModels] = useState<string[]>([]);
-  const [showServiceModal, setShowServiceModal] = useState(false);
-  const [pendingDeviceInfo, setPendingDeviceInfo] = useState<any>(null);
   const [customModels, setCustomModels] = useState<Array<{ id: string; brand: string; series?: string | null; model: string; image_url?: string | null }>>([]);
   const [dynamicBrands, setDynamicBrands] = useState<BrandData[]>([]);
 
@@ -283,31 +285,34 @@ export default function DeviceBrowserSection() {
   };
 
   const handleModelClick = (model: string) => {
-    // Create device info
     const deviceInfo = {
       brand: selectedBrand?.name || '',
       model: formatModelName(model),
       category: selectedCategory?.name || ''
     };
 
-    // Show modal to ask if it's for repair or buyback
-    setPendingDeviceInfo(deviceInfo);
-    setShowServiceModal(true);
-  };
+    let raw: string | null = null;
+    try {
+      raw = sessionStorage.getItem('navIntent');
+      sessionStorage.removeItem('navIntent');
+    } catch {
+      /* ignore */
+    }
 
-  const handleServiceSelection = (serviceType: 'repair' | 'buyback') => {
-    if (!pendingDeviceInfo) return;
+    let serviceType: 'repair' | 'buyback' = 'repair';
+    if (raw === 'buyback') {
+      serviceType = 'buyback';
+    } else if (raw === 'repair') {
+      serviceType = 'repair';
+    } else if (defaultServiceType === 'buyback') {
+      serviceType = 'buyback';
+    } else if (defaultServiceType === 'repair') {
+      serviceType = 'repair';
+    }
 
-    // Store device info and service type in session storage
-    sessionStorage.setItem('selectedDevice', JSON.stringify(pendingDeviceInfo));
+    sessionStorage.setItem('selectedDevice', JSON.stringify(deviceInfo));
     sessionStorage.setItem('serviceType', serviceType);
-
-    // Navigate to the appropriate page
-    navigate(`/${serviceType}`, { state: { selectedDevice: pendingDeviceInfo, serviceType } });
-
-    // Reset modal state
-    setShowServiceModal(false);
-    setPendingDeviceInfo(null);
+    navigate(`/${serviceType}`, { state: { selectedDevice: deviceInfo, serviceType } });
   };
 
   // Helper to get models from folder
@@ -641,67 +646,6 @@ export default function DeviceBrowserSection() {
           </div>
         )}
       </div>
-
-      {/* Service Selection Modal */}
-      {showServiceModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 sm:p-8">
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">What would you like to do?</h3>
-            <p className="text-gray-600 mb-6">
-              Select the service you need for {pendingDeviceInfo?.brand} {pendingDeviceInfo?.model}
-            </p>
-
-            <div className="space-y-3">
-              <button
-                onClick={() => handleServiceSelection('repair')}
-                className="w-full flex items-center gap-4 p-4 bg-blue-50 hover:bg-blue-100 border-2 border-blue-200 hover:border-blue-400 rounded-xl transition-all duration-200 group"
-              >
-                <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </div>
-                <div className="text-left flex-1">
-                  <h4 className="font-semibold text-gray-900 text-lg">Repair Service</h4>
-                  <p className="text-sm text-gray-600">Fix issues with your device</p>
-                </div>
-                <svg className="w-5 h-5 text-blue-600 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-
-              <button
-                onClick={() => handleServiceSelection('buyback')}
-                className="w-full flex items-center gap-4 p-4 bg-green-50 hover:bg-green-100 border-2 border-green-200 hover:border-green-400 rounded-xl transition-all duration-200 group"
-              >
-                <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div className="text-left flex-1">
-                  <h4 className="font-semibold text-gray-900 text-lg">Buyback Service</h4>
-                  <p className="text-sm text-gray-600">Sell your device for cash</p>
-                </div>
-                <svg className="w-5 h-5 text-green-600 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            </div>
-
-            <button
-              onClick={() => {
-                setShowServiceModal(false);
-                setPendingDeviceInfo(null);
-              }}
-              className="w-full mt-4 py-3 text-gray-600 hover:text-gray-900 font-medium transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
     </section>
   );
 }

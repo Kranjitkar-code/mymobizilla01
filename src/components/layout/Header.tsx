@@ -28,6 +28,11 @@ export default function Header() {
   const handleNavClick = (item: typeof nav[0], e: React.MouseEvent) => {
     if (item.scrollTo) {
       e.preventDefault();
+      if (item.to === "/repair") {
+        sessionStorage.setItem("navIntent", "repair");
+      } else if (item.to === "/buyback") {
+        sessionStorage.setItem("navIntent", "buyback");
+      }
       if (location.pathname !== "/") {
         navigate("/?scrollTo=" + item.scrollTo);
       } else {
