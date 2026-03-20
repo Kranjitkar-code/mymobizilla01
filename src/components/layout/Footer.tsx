@@ -21,7 +21,6 @@ export default function Footer() {
         <div className="min-w-0">
           <h4 className="font-semibold mb-2 text-primary">Quick Links</h4>
           <ul className="space-y-1 text-sm text-muted-foreground">
-            <li><Link to="/buy" className="hover:text-primary">Buy</Link></li>
             <li><Link to="/buyback" className="hover:text-primary">Buy Back</Link></li>
             <li><Link to="/repair" className="hover:text-primary">Repair</Link></li>
             <li><Link to="/training" className="hover:text-primary">Training</Link></li>
