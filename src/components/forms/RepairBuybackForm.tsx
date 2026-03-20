@@ -5,8 +5,139 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Smartphone, DollarSign, Wrench } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { repairAPI, type RepairFormData } from '@/api/repair';
+
+const REPAIR_ISSUE_GROUPS: { category: string; issues: string[] }[] = [
+  {
+    category: 'Display',
+    issues: [
+      'Ghost Touch',
+      'No Frame',
+      'Frame Change',
+      'Display Swap',
+      'TrueTone Copy',
+      'Display Loose',
+      'Display Damage',
+      'Display Fitting',
+      'Display Messages Remove',
+      'Display Change',
+      'Cracked Glass',
+      'Touch Issue',
+      'Display Flickering',
+      'Blank Display (Display Dead)',
+      'White Display',
+      'Yellow Display',
+      'Green Display',
+      'Line In Display',
+    ],
+  },
+  {
+    category: 'Audio',
+    issues: [
+      'Front Speaker Not Working',
+      'Main Speaker Not Working',
+      'Speaker Low Sound',
+      'Mic Not Working',
+      'Mic Distort',
+    ],
+  },
+  {
+    category: 'Body',
+    issues: [
+      'Back Panel Laser',
+      'Rough Housing',
+      'Broken Back Panel',
+      'Housing Bend',
+      'Housing Change',
+    ],
+  },
+  {
+    category: 'Charging',
+    issues: ['Not Charging', 'Charging Port Loose'],
+  },
+  {
+    category: 'Camera / Flash',
+    issues: ['Flash Light Not Working'],
+  },
+  {
+    category: 'Connectivity',
+    issues: [
+      'Low Network',
+      'WiFi Not Working',
+      'Bluetooth Not Working',
+      'Network Issue',
+      'SIM Lock',
+    ],
+  },
+  {
+    category: 'Software / Security',
+    issues: ['Bypass'],
+  },
+  {
+    category: 'Board / Power',
+    issues: ['Dead'],
+  },
+  {
+    category: 'Software / Board',
+    issues: ['Auto Restart', 'CPU Lag', 'Hang On Logo'],
+  },
+  {
+    category: 'Board / Storage',
+    issues: ['Hard Disk Issue'],
+  },
+  {
+    category: 'Liquid Service',
+    issues: ['Water Proofing', 'Water Damage', 'Moisture Detection'],
+  },
+  {
+    category: 'Maintenance',
+    issues: ['Servicing'],
+  },
+  {
+    category: 'Buttons / Controls',
+    issues: [
+      'Vibration Not Working',
+      'Home Button Not Working',
+      'Power Button Not Working',
+      'Volume Button Not Working',
+      'Ringer Slider',
+    ],
+  },
+  {
+    category: 'Battery',
+    issues: [
+      'Battery Welding',
+      'Battery Swap',
+      'Battery Change',
+      'Battery Drop',
+      'Battery Swollen',
+      'Battery Health Not Shown',
+      'Battery Boost',
+      'Battery Draining',
+    ],
+  },
+  {
+    category: 'Camera / Face ID',
+    issues: [
+      'Front Camera Portrait Not Working',
+      'Black Spot In Main Camera',
+      'Camera Glass Cracked',
+      'Camera Change',
+      'Rear Camera Not Working',
+      'Front Camera Not Working',
+      'Face ID Not Working',
+      'Blur In Main Camera',
+      'Main Camera Motor Not Working',
+    ],
+  },
+  {
+    category: 'Other',
+    issues: ['Other'],
+  },
+];
 
 interface SelectedDevice {
   brand: string;
@@ -24,9 +155,8 @@ interface RepairBuybackFormProps {
 export default function RepairBuybackForm({ selectedDevice, serviceType: initialServiceType, onSuccess, onCancel }: RepairBuybackFormProps) {
   const [currentStep, setCurrentStep] = useState(initialServiceType ? 2 : 1);
   const [serviceType, setServiceType] = useState<'repair' | 'buyback' | ''>(initialServiceType || '');
-  const [problem, setProblem] = useState('');
+  const [selectedIssues, setSelectedIssues] = useState<string[]>([]);
   const [deviceCondition, setDeviceCondition] = useState('');
-  const [showOtherProblem, setShowOtherProblem] = useState(false);
   const [otherProblemText, setOtherProblemText] = useState('');
   const [showOtherCondition, setShowOtherCondition] = useState(false);
   const [otherConditionText, setOtherConditionText] = useState('');
@@ -52,25 +182,17 @@ export default function RepairBuybackForm({ selectedDevice, serviceType: initial
   // Load device info from session storage if not passed as prop
   const [deviceInfo, setDeviceInfo] = useState<SelectedDevice | undefined>(selectedDevice);
   
-  // Common repair issues
-  const repairIssues = [
-    'Screen Cracked/Broken',
-    'Battery Draining Fast',
-    'Not Charging',
-    'Water Damage',
-    'Camera Not Working',
-    'Speaker/Audio Issues',
-    'Microphone Not Working',
-    'WiFi/Bluetooth Issues',
-    'Overheating',
-    'Software/Performance Issues',
-    'Button Not Working',
-    'Touchscreen Not Responding',
-    'Back Glass Broken',
-    'Port/Charging Jack Issues',
-    'Face ID/Fingerprint Sensor Issues',
-    'Other'
-  ];
+  const toggleRepairIssue = (issue: string) => {
+    setSelectedIssues((prev) =>
+      prev.includes(issue) ? prev.filter((i) => i !== issue) : [...prev, issue]
+    );
+  };
+
+  useEffect(() => {
+    if (!selectedIssues.includes('Other')) {
+      setOtherProblemText('');
+    }
+  }, [selectedIssues]);
 
   // Device condition options for buyback - MCQ step 1
   const physicalConditionOptions = [
@@ -127,9 +249,14 @@ export default function RepairBuybackForm({ selectedDevice, serviceType: initial
       try {
         const parsed = JSON.parse(savedForm);
         setServiceType(parsed.serviceType || '');
-        setProblem(parsed.problem || '');
+        if (Array.isArray(parsed.selectedIssues)) {
+          setSelectedIssues(parsed.selectedIssues);
+        } else if (parsed.problem) {
+          setSelectedIssues([parsed.problem]);
+        } else {
+          setSelectedIssues([]);
+        }
         setDeviceCondition(parsed.deviceCondition || '');
-        setShowOtherProblem(parsed.showOtherProblem || false);
         setOtherProblemText(parsed.otherProblemText || '');
         setShowOtherCondition(parsed.showOtherCondition || false);
         setOtherConditionText(parsed.otherConditionText || '');
@@ -154,9 +281,8 @@ export default function RepairBuybackForm({ selectedDevice, serviceType: initial
   useEffect(() => {
     const formData = {
       serviceType,
-      problem,
+      selectedIssues,
       deviceCondition,
-      showOtherProblem,
       otherProblemText,
       showOtherCondition,
       otherConditionText,
@@ -175,7 +301,7 @@ export default function RepairBuybackForm({ selectedDevice, serviceType: initial
     };
     localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
     console.log('💾 Auto-saved form data to localStorage');
-  }, [serviceType, problem, deviceCondition, showOtherProblem, otherProblemText, showOtherCondition, otherConditionText, 
+  }, [serviceType, selectedIssues, deviceCondition, otherProblemText, showOtherCondition, otherConditionText, 
       physicalCondition, screenCondition, functionalStatus, batteryHealth, accessories, otherAccessories, deviceAge,
       customerInfo, additionalDetails, deviceInfo]);
   
@@ -223,8 +349,9 @@ export default function RepairBuybackForm({ selectedDevice, serviceType: initial
     setIsSubmitting(true);
     
     try {
-      // Get the actual problem/condition text
-      const actualProblem = problem === 'Other' ? otherProblemText : problem;
+      const actualProblem = selectedIssues
+        .map((i) => (i === 'Other' ? `Other: ${otherProblemText.trim()}` : i))
+        .join('; ');
       
       // Compile buyback condition report
       let buybackConditionReport = '';
@@ -349,30 +476,49 @@ DEVICE SERIES: ${deviceInfo.category || 'N/A'}
               </div>
               
               <div className="space-y-4">
-                <Label className="text-blue-900">Select Problem</Label>
-                <RadioGroup 
-                  value={problem}
-                  onValueChange={(value) => {
-                    setProblem(value);
-                    setShowOtherProblem(value === 'Other');
-                    if (value !== 'Other') setOtherProblemText('');
-                  }}
-                  className="grid grid-cols-1 md:grid-cols-2 gap-3"
-                >
-                  {repairIssues.map((option) => (
-                    <div 
-                      key={option}
-                      className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer transition-all hover:bg-blue-50 hover:border-blue-300"
-                    >
-                      <RadioGroupItem value={option} id={option} />
-                      <Label htmlFor={option} className="cursor-pointer flex-1 font-normal">
-                        {option}
-                      </Label>
+                <Label className="text-blue-900">Select problem(s)</Label>
+                <div className="space-y-6 max-h-[min(60vh,28rem)] overflow-y-auto pr-1">
+                  {REPAIR_ISSUE_GROUPS.map((group) => (
+                    <div key={group.category} className="space-y-2">
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        {group.category}
+                      </p>
+                      <div className="grid grid-cols-1 gap-2">
+                        {group.issues.map((issue, idx) => {
+                          const id = `repair-issue-${group.category}-${idx}-${issue.slice(0, 12)}`;
+                          const checked = selectedIssues.includes(issue);
+                          return (
+                            <div
+                              key={issue + idx}
+                              className={cn(
+                                'flex items-center gap-3 p-3 border rounded-lg transition-all',
+                                checked
+                                  ? 'border-blue-500 bg-blue-50 shadow-sm'
+                                  : 'border-border hover:bg-blue-50/50 hover:border-blue-200'
+                              )}
+                            >
+                              <Checkbox
+                                id={id}
+                                checked={checked}
+                                onCheckedChange={() => toggleRepairIssue(issue)}
+                                aria-label={issue}
+                              />
+                              <Label htmlFor={id} className="cursor-pointer flex-1 font-normal leading-snug">
+                                {issue}
+                              </Label>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   ))}
-                </RadioGroup>
-                
-                {showOtherProblem && (
+                </div>
+
+                <p className="text-sm text-muted-foreground">
+                  {selectedIssues.length} issue{selectedIssues.length === 1 ? '' : 's'} selected
+                </p>
+
+                {selectedIssues.includes('Other') && (
                   <div className="mt-4 animate-in fade-in slide-in-from-top-2">
                     <Label htmlFor="otherText">Please specify the problem</Label>
                     <Textarea
@@ -438,6 +584,23 @@ DEVICE SERIES: ${deviceInfo.category || 'N/A'}
               </div>
               
               <div className="space-y-4">
+                {selectedIssues.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium text-foreground mb-2">Selected issues</p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedIssues.map((issue, idx) => (
+                        <span
+                          key={`${issue}-${idx}`}
+                          className="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-900"
+                        >
+                          {issue === 'Other' && otherProblemText.trim()
+                            ? `Other: ${otherProblemText.trim()}`
+                            : issue}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <Label htmlFor="additional">Additional Information (Optional)</Label>
                 <Textarea
                   id="additional"
@@ -770,10 +933,9 @@ DEVICE SERIES: ${deviceInfo.category || 'N/A'}
       
       case 2:
         if (serviceType === 'repair') {
-          if (problem === 'Other') {
-            return otherProblemText.trim() !== '';
-          }
-          return problem.trim() !== '';
+          if (selectedIssues.length === 0) return false;
+          if (selectedIssues.includes('Other') && otherProblemText.trim() === '') return false;
+          return true;
         } else {
           // Buyback step 2: Physical condition
           return physicalCondition.trim() !== '';
