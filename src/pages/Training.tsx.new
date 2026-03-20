@@ -1,0 +1,14 @@
+import { Helmet } from "react-helmet-async";
+import ComingSoon from "@/components/ui/ComingSoon";
+
+export default function Training() {
+  return (
+    <>
+      <Helmet>
+        <title>Training | Mobizilla</title>
+        <meta name="description" content="Professional training programs for mobile device repair and maintenance" />
+      </Helmet>
+      <ComingSoon section="training" />
+    </>
+  );
+}

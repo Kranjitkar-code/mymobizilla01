@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OTP Service Test</title>
+</head>
+<body>
+    <h1>OTP Service Test</h1>
+    <button id="testBtn">Test OTP Service</button>
+    <div id="result"></div>
+
+    <script type="module">
+        import { freeUnrestrictedOTPService } from './services/freeUnrestrictedOTPService.js';
+
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            try {
+                console.log('Testing OTP service...');
+                const result = await freeUnrestrictedOTPService.sendOTP('+9779876543210', '1234', 'repair');
+                console.log('Result:', result);
+                document.getElementById('result').innerHTML = `<p>Success: ${JSON.stringify(result)}</p>`;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>
