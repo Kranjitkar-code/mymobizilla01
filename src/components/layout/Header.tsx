@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import { useCart } from "@/lib/cart";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Logo from "@/components/ui/Logo";
-import { Menu, X, Phone } from "lucide-react";
+import { Menu, Phone } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useContentItem } from "@/contexts/ContentContext";
 import { MOBIZILLA } from "@/config/mobizilla";
@@ -12,17 +11,12 @@ const nav = [
   { to: "/", label: "Home" },
   { to: "/repair", label: "Repair", scrollTo: "browse-by-brand" },
   { to: "/buyback", label: "Buy Back", scrollTo: "browse-by-brand" },
-  { to: "/shop", label: "Buy" },
   { to: "/training", label: "Training" },
-  { to: "/gallery", label: "Gallery" },
   { to: "/blog", label: "Blog" },
   { to: "/contact", label: "Contact" },
-  { to: "/services", label: "Services" },
-  { to: "/checkout", label: "Checkout" },
 ];
 
 export default function Header() {
-  const cart = useCart();
   const location = useLocation();
   const navigate = useNavigate();
   const [mx, setMx] = useState(50);
@@ -100,26 +94,6 @@ export default function Header() {
           <Link to="/admin/login">
             <Button variant="ghost" className="text-gray-700 hover:bg-gray-100">Admin</Button>
           </Link>
-
-          <Link to="/shop">
-            <Button variant="ghost" className="text-gray-700 hover:bg-gray-100">Shop</Button>
-          </Link>
-
-          <Link to="/checkout">
-            <Button variant="ghost" size="icon" className="relative text-gray-700 hover:bg-gray-100">
-              <span className="sr-only">Shopping cart</span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="8" cy="21" r="1" />
-                <circle cx="19" cy="21" r="1" />
-                <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
-              </svg>
-              {cart.items.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">
-                  {cart.items.length}
-                </span>
-              )}
-            </Button>
-          </Link>
         </div>
 
         <div className="flex md:hidden items-center gap-2">
@@ -130,22 +104,6 @@ export default function Header() {
           >
             <Phone className="h-5 w-5" />
           </a>
-
-          <Link to="/checkout">
-            <Button variant="ghost" size="icon" className="relative text-gray-700 hover:bg-gray-100">
-              <span className="sr-only">Shopping cart</span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="8" cy="21" r="1" />
-                <circle cx="19" cy="21" r="1" />
-                <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
-              </svg>
-              {cart.items.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">
-                  {cart.items.length}
-                </span>
-              )}
-            </Button>
-          </Link>
 
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
