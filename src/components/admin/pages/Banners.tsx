@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Save, Loader2, Plus, Trash2, Upload, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import SupabaseBannersService, { type BannerRow } from "@/services/supabaseBannersService";
 
 interface Banner {
     id: string;
@@ -12,6 +13,15 @@ interface Banner {
     imageUrl: string;
     link: string;
     isActive: boolean;
+}
+
+const DEFAULT_BANNERS: Banner[] = [
+    { id: "1", title: "Repair Services", imageUrl: "/images/01.webp", link: "/repair", isActive: true },
+    { id: "2", title: "Sell Your Device", imageUrl: "/images/02.webp", link: "/buyback", isActive: true },
+];
+
+function toLocal(row: BannerRow): Banner {
+    return { id: row.id, title: row.title, imageUrl: row.image_url || '', link: row.link_url || '', isActive: row.active };
 }
 
 export default function BannersPage() {
@@ -27,35 +37,12 @@ export default function BannersPage() {
     const loadContent = async () => {
         setIsLoading(true);
         try {
-            const saved = localStorage.getItem("banners");
-            if (saved) {
-                setBanners(JSON.parse(saved));
-            } else {
-                // Default banners
-                setBanners([
-                    {
-                        id: "1",
-                        title: "Repair Services",
-                        imageUrl: "/images/01.webp",
-                        link: "/repair",
-                        isActive: true,
-                    },
-                    {
-                        id: "2",
-                        title: "Sell Your Device",
-                        imageUrl: "/images/02.webp",
-                        link: "/buyback",
-                        isActive: true,
-                    },
-                ]);
-            }
+            const rows = await SupabaseBannersService.getAllBanners();
+            setBanners(rows.length > 0 ? rows.map(toLocal) : DEFAULT_BANNERS);
         } catch (error) {
-            console.error("Error loading content:", error);
-            toast({
-                title: "Error",
-                description: "Failed to load banners",
-                variant: "destructive",
-            });
+            console.error("Error loading banners:", error);
+            setBanners(DEFAULT_BANNERS);
+            toast({ title: "Error", description: "Failed to load banners", variant: "destructive" });
         } finally {
             setIsLoading(false);
         }
@@ -64,19 +51,20 @@ export default function BannersPage() {
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            localStorage.setItem("banners", JSON.stringify(banners));
+            const rows = banners.map(b => ({
+                title: b.title,
+                image_url: b.imageUrl || null,
+                link_url: b.link || null,
+                active: b.isActive,
+            }));
+            const result = await SupabaseBannersService.replaceAll(rows);
+            if (!result.success) throw result.error;
 
-            toast({
-                title: "Success",
-                description: "Banners saved successfully",
-            });
+            toast({ title: "Success", description: "Banners saved successfully" });
+            await loadContent();
         } catch (error) {
-            console.error("Error saving content:", error);
-            toast({
-                title: "Error",
-                description: "Failed to save banners",
-                variant: "destructive",
-            });
+            console.error("Error saving banners:", error);
+            toast({ title: "Error", description: "Failed to save banners", variant: "destructive" });
         } finally {
             setIsSaving(false);
         }
@@ -129,7 +117,7 @@ export default function BannersPage() {
                     <Card key={banner.id}>
                         <CardHeader>
                             <div className="flex items-center justify-between">
-                                <CardTitle className="text-lg">Banner #{banner.id}</CardTitle>
+                                <CardTitle className="text-lg">Banner #{banner.id.slice(0, 8)}</CardTitle>
                                 <Button
                                     variant="destructive"
                                     size="sm"

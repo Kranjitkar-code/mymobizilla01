@@ -2,8 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'react-router-dom';
 import { useContentItem } from '@/contexts/ContentContext';
 import { Helmet } from 'react-helmet-async';
-import Logo from '@/components/ui/Logo';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Carousel,
   CarouselContent,
@@ -12,7 +11,34 @@ import {
   CarouselPrevious,
   type CarouselApi,
 } from '@/components/ui/carousel';
+import { Skeleton } from '@/components/ui/skeleton';
 import DeviceBrowserSection from '@/components/sections/DeviceBrowserSection';
+import SupabaseBannersService from '@/services/supabaseBannersService';
+import SupabaseWhyChooseService, { type WhyChooseRow } from '@/services/supabaseWhyChooseService';
+import SupabaseVideosService from '@/services/supabaseVideosService';
+
+const DEFAULT_BANNERS = [
+  { image_url: '/images/01.webp', link_url: '/repair' },
+  { image_url: '/images/02.webp', link_url: '/buyback' },
+  { image_url: '/images/03.webp', link_url: '/repair' },
+  { image_url: '/images/04.webp', link_url: '/repair' },
+  { image_url: '/images/05.webp', link_url: '/buyback' },
+  { image_url: '/images/06.webp', link_url: '/buyback' },
+];
+
+const DEFAULT_WHY_CHOOSE = [
+  { title: 'Genuine Parts', description: 'Quality spares sourced from trusted vendors', icon_url: '✓', _color: 'blue' },
+  { title: 'Safe & Secure', description: 'Your data and device protected at every step', icon_url: '🛡', _color: 'green' },
+  { title: 'Warranty on Repairs', description: 'Up to 3-6 months on most repairs', icon_url: '🔧', _color: 'purple' },
+  { title: 'Quick TAT', description: 'Pickup, repair and deliver — often same day', icon_url: '⚡', _color: 'orange' },
+];
+
+const DEFAULT_VIDEOS = [
+  { title: 'Mobizilla Video 1', video_url: 'https://www.youtube.com/embed/bE4zoJWuauU?si=os7cFKaru7adn8iC' },
+  { title: 'Mobizilla Video 2', video_url: 'https://www.youtube.com/embed/GNZ3UcbMuPc' },
+];
+
+const WHY_CHOOSE_COLORS = ['blue', 'green', 'purple', 'orange', 'sky', 'amber', 'rose', 'teal'];
 
 export default function Home() {
   const location = useLocation();
@@ -23,10 +49,38 @@ export default function Home() {
   const whyChooseTitle = useContentItem('home-why-choose-title', 'Why Choose Mobizilla?');
   const whyChooseSubtitle = useContentItem('home-why-choose-subtitle', 'Experience the difference with our modern approach to mobile care.');
 
-  // Hero banner carousel
-  const bannerImages = ['/images/01.webp', '/images/02.webp', '/images/03.webp', '/images/04.webp', '/images/05.webp', '/images/06.webp'];
+  // Hero banner carousel — Supabase-backed
+  const [banners, setBanners] = useState<{ image_url: string; link_url: string }[]>([]);
+  const [bannersLoading, setBannersLoading] = useState(true);
   const [api, setApi] = useState<CarouselApi | null>(null);
   const [isHovered, setIsHovered] = useState(false);
+
+  // Why Choose Us — Supabase-backed
+  const [whyChooseItems, setWhyChooseItems] = useState<(WhyChooseRow | typeof DEFAULT_WHY_CHOOSE[0])[]>([]);
+  const [whyChooseLoading, setWhyChooseLoading] = useState(true);
+
+  // Videos — Supabase-backed
+  const [videos, setVideos] = useState<{ title: string; video_url: string }[]>([]);
+  const [videosLoading, setVideosLoading] = useState(true);
+
+  useEffect(() => {
+    SupabaseBannersService.getActiveBanners().then(rows => {
+      setBanners(rows.length > 0
+        ? rows.map(r => ({ image_url: r.image_url || '/placeholder.svg', link_url: r.link_url || '/repair' }))
+        : DEFAULT_BANNERS);
+      setBannersLoading(false);
+    });
+    SupabaseWhyChooseService.getAll().then(rows => {
+      setWhyChooseItems(rows.length > 0 ? rows : DEFAULT_WHY_CHOOSE);
+      setWhyChooseLoading(false);
+    });
+    SupabaseVideosService.getAll().then(rows => {
+      setVideos(rows.length > 0
+        ? rows.map(r => ({ title: r.title, video_url: r.video_url }))
+        : DEFAULT_VIDEOS);
+      setVideosLoading(false);
+    });
+  }, []);
 
   useEffect(() => {
     if (!api || isHovered) return;
@@ -121,17 +175,17 @@ export default function Home() {
 
             {/* Right Content - Banner Carousel */}
             <div className="relative" onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
-              <Carousel setApi={setApi} className="w-full">
-                <CarouselContent>
-                  {bannerImages.map((src, idx) => {
-                    const repairIndexes = [0, 1, 3];
-                    const to = repairIndexes.includes(idx) ? '/repair' : '/buyback';
-                    return (
+              {bannersLoading ? (
+                <Skeleton className="w-full aspect-[16/9] sm:aspect-auto sm:h-[420px] rounded-2xl" />
+              ) : (
+                <Carousel setApi={setApi} className="w-full">
+                  <CarouselContent>
+                    {banners.map((b, idx) => (
                       <CarouselItem key={idx}>
-                        <Link to={to} aria-label={`banner-link-${idx + 1}`}>
+                        <Link to={b.link_url} aria-label={`banner-link-${idx + 1}`}>
                           <div className="w-full aspect-[16/9] sm:aspect-auto sm:h-[420px]">
                             <img
-                              src={src}
+                              src={b.image_url}
                               alt={`banner-${idx + 1}`}
                               className="w-full h-full object-cover rounded-2xl border"
                               loading="eager"
@@ -142,12 +196,12 @@ export default function Home() {
                           </div>
                         </Link>
                       </CarouselItem>
-                    );
-                  })}
-                </CarouselContent>
-                <CarouselPrevious className="-left-4 sm:-left-10 bg-white/90" />
-                <CarouselNext className="-right-4 sm:-right-10 bg-white/90" />
-              </Carousel>
+                    ))}
+                  </CarouselContent>
+                  <CarouselPrevious className="-left-4 sm:-left-10 bg-white/90" />
+                  <CarouselNext className="-right-4 sm:-right-10 bg-white/90" />
+                </Carousel>
+              )}
             </div>
           </div>
         </div>
@@ -190,64 +244,64 @@ export default function Home() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{whyChooseTitle}</h2>
           <div className="max-w-4xl mx-auto mb-12">
-            <div className="grid grid-cols-1 md:grid-cols-2 place-items-center gap-6 md:gap-8 bg-gray-50 rounded-2xl p-4 md:p-6 border">
-              <div className="w-full max-w-[340px] md:max-w-[360px] mx-auto rounded-xl overflow-hidden shadow-lg bg-black" style={{ aspectRatio: '9 / 16' }}>
-                <iframe
-                  className="w-full h-full"
-                  src="https://www.youtube.com/embed/bE4zoJWuauU?si=os7cFKaru7adn8iC"
-                  title="Mobizilla Video 1"
-                  loading="lazy"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  referrerPolicy="strict-origin-when-cross-origin"
-                />
+            {videosLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 place-items-center gap-6 md:gap-8 bg-gray-50 rounded-2xl p-4 md:p-6 border">
+                <Skeleton className="w-full max-w-[340px] md:max-w-[360px] mx-auto rounded-xl" style={{ aspectRatio: '9 / 16' }} />
+                <Skeleton className="w-full max-w-[340px] md:max-w-[360px] mx-auto rounded-xl" style={{ aspectRatio: '9 / 16' }} />
               </div>
-              <div className="w-full max-w-[340px] md:max-w-[360px] mx-auto rounded-xl overflow-hidden shadow-lg bg-black" style={{ aspectRatio: '9 / 16' }}>
-                <iframe
-                  className="w-full h-full"
-                  src="https://www.youtube.com/embed/GNZ3UcbMuPc"
-                  title="Mobizilla Video 2"
-                  loading="lazy"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  referrerPolicy="strict-origin-when-cross-origin"
-                />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 place-items-center gap-6 md:gap-8 bg-gray-50 rounded-2xl p-4 md:p-6 border">
+                {videos.map((v, idx) => (
+                  <div key={idx} className="w-full max-w-[340px] md:max-w-[360px] mx-auto rounded-xl overflow-hidden shadow-lg bg-black" style={{ aspectRatio: '9 / 16' }}>
+                    <iframe
+                      className="w-full h-full"
+                      src={v.video_url}
+                      title={v.title}
+                      loading="lazy"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                      referrerPolicy="strict-origin-when-cross-origin"
+                    />
+                  </div>
+                ))}
               </div>
-            </div>
+            )}
           </div>
           <p className="text-lg text-gray-600 mb-16 max-w-2xl mx-auto">{whyChooseSubtitle}</p>
 
           {/* Features Grid - larger icons with better contrast */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="w-20 h-20 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
-                <span className="text-blue-600 text-3xl">✓</span>
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Genuine Parts</h3>
-              <p className="text-sm text-gray-600">Quality spares sourced from trusted vendors</p>
+          {whyChooseLoading ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              {[0, 1, 2, 3].map(i => (
+                <div key={i} className="text-center">
+                  <Skeleton className="w-20 h-20 rounded-2xl mx-auto mb-4" />
+                  <Skeleton className="h-5 w-32 mx-auto mb-2" />
+                  <Skeleton className="h-4 w-48 mx-auto" />
+                </div>
+              ))}
             </div>
-            <div className="text-center">
-              <div className="w-20 h-20 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
-                <span className="text-green-600 text-3xl">🛡</span>
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Safe & Secure</h3>
-              <p className="text-sm text-gray-600">Your data and device protected at every step</p>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              {whyChooseItems.map((item, idx) => {
+                const color = ('_color' in item && item._color) ? item._color : WHY_CHOOSE_COLORS[idx % WHY_CHOOSE_COLORS.length];
+                const icon = item.icon_url || '✓';
+                const isEmoji = icon.length <= 2 || /\p{Emoji}/u.test(icon);
+                return (
+                  <div key={idx} className="text-center">
+                    <div className={`w-20 h-20 bg-${color}-100 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm`}>
+                      {isEmoji ? (
+                        <span className={`text-${color}-600 text-3xl`}>{icon}</span>
+                      ) : (
+                        <img src={icon} alt={item.title} className="w-10 h-10 object-contain" />
+                      )}
+                    </div>
+                    <h3 className="font-semibold text-gray-900 mb-2">{item.title}</h3>
+                    <p className="text-sm text-gray-600">{item.description}</p>
+                  </div>
+                );
+              })}
             </div>
-            <div className="text-center">
-              <div className="w-20 h-20 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
-                <span className="text-purple-600 text-3xl">🔧</span>
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Warranty on Repairs</h3>
-              <p className="text-sm text-gray-600">Up to 3-6 months on most repairs</p>
-            </div>
-            <div className="text-center">
-              <div className="w-20 h-20 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
-                <span className="text-orange-600 text-3xl">⚡</span>
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Quick TAT</h3>
-              <p className="text-sm text-gray-600">Pickup, repair and deliver — often same day</p>
-            </div>
-          </div>
+          )}
         </div>
       </section>
     </div>

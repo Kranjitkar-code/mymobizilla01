@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Save, Loader2, Plus, Trash2, Wrench } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AdminCrudPage } from "@/components/admin/crud/AdminCrudShell";
+import SupabaseServicesService, { type ServiceRow } from "@/services/supabaseServicesService";
 
 interface Service {
     id: string;
@@ -14,6 +15,16 @@ interface Service {
     description: string;
     price: string;
     icon: string;
+}
+
+const DEFAULT_SERVICES: Service[] = [
+    { id: "1", title: "Screen Replacement", description: "Professional screen replacement for all smartphone models with genuine parts", price: "₨1,500 - ₨8,000", icon: "📱" },
+    { id: "2", title: "Battery Replacement", description: "High-quality battery replacement with 1-year warranty", price: "₨800 - ₨3,500", icon: "🔋" },
+    { id: "3", title: "Water Damage Repair", description: "Expert water damage treatment and motherboard repair", price: "₨3,999+", icon: "💧" },
+];
+
+function toLocal(row: ServiceRow): Service {
+    return { id: row.id, title: row.title, description: row.description || '', price: row.price_range || '', icon: row.icon || '🔧' };
 }
 
 export default function ServicesPage() {
@@ -29,42 +40,12 @@ export default function ServicesPage() {
     const loadContent = async () => {
         setIsLoading(true);
         try {
-            const saved = localStorage.getItem("services");
-            if (saved) {
-                setServices(JSON.parse(saved));
-            } else {
-                // Default services
-                setServices([
-                    {
-                        id: "1",
-                        title: "Screen Replacement",
-                        description: "Professional screen replacement for all smartphone models with genuine parts",
-                        price: "₨1,500 - ₨8,000",
-                        icon: "📱",
-                    },
-                    {
-                        id: "2",
-                        title: "Battery Replacement",
-                        description: "High-quality battery replacement with 1-year warranty",
-                        price: "₨800 - ₨3,500",
-                        icon: "🔋",
-                    },
-                    {
-                        id: "3",
-                        title: "Water Damage Repair",
-                        description: "Expert water damage treatment and motherboard repair",
-                        price: "₨3,999+",
-                        icon: "💧",
-                    },
-                ]);
-            }
+            const rows = await SupabaseServicesService.getAll();
+            setServices(rows.length > 0 ? rows.map(toLocal) : DEFAULT_SERVICES);
         } catch (error) {
-            console.error("Error loading content:", error);
-            toast({
-                title: "Error",
-                description: "Failed to load services",
-                variant: "destructive",
-            });
+            console.error("Error loading services:", error);
+            setServices(DEFAULT_SERVICES);
+            toast({ title: "Error", description: "Failed to load services", variant: "destructive" });
         } finally {
             setIsLoading(false);
         }
@@ -73,19 +54,20 @@ export default function ServicesPage() {
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            localStorage.setItem("services", JSON.stringify(services));
+            const rows = services.map(s => ({
+                title: s.title,
+                description: s.description || null,
+                price_range: s.price || null,
+                icon: s.icon || null,
+            }));
+            const result = await SupabaseServicesService.replaceAll(rows);
+            if (!result.success) throw result.error;
 
-            toast({
-                title: "Success",
-                description: "Services saved successfully",
-            });
+            toast({ title: "Success", description: "Services saved successfully" });
+            await loadContent();
         } catch (error) {
-            console.error("Error saving content:", error);
-            toast({
-                title: "Error",
-                description: "Failed to save services",
-                variant: "destructive",
-            });
+            console.error("Error saving services:", error);
+            toast({ title: "Error", description: "Failed to save services", variant: "destructive" });
         } finally {
             setIsSaving(false);
         }
