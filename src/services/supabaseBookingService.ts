@@ -2,6 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { RepairFormData } from '@/api/local-repair';
 
 const TABLE = 'repair_orders';
+const LOCAL_STORAGE_KEY = 'mobizilla_repairs';
 
 export interface BookingResult {
   success: boolean;
@@ -49,8 +50,16 @@ export interface BookingRecord {
   updated_at: string;
 }
 
+function getLocalBookings(): BookingRecord[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
 export const SupabaseBookingService = {
   async getBookingByRef(ref: string): Promise<BookingRecord | null> {
+    // Try Supabase first
     try {
       const { data, error } = await supabase
         .from(TABLE)
@@ -59,35 +68,35 @@ export const SupabaseBookingService = {
         .limit(1)
         .maybeSingle();
 
-      if (error) {
-        console.error('Error looking up booking by ref:', error);
-        return null;
-      }
-      return (data as BookingRecord) || null;
-    } catch (err) {
-      console.error('Error looking up booking:', err);
-      return null;
-    }
+      if (!error && data) return data as BookingRecord;
+    } catch { /* fall through to localStorage */ }
+
+    // Fallback: search localStorage
+    const local = getLocalBookings();
+    return local.find(b => b.tracking_code?.toLowerCase() === ref.trim().toLowerCase()) || null;
   },
 
   async getBookingsByPhone(phone: string): Promise<BookingRecord[]> {
+    const cleaned = phone.replace(/[\s\-()]/g, '');
+
+    // Try Supabase first
     try {
-      const cleaned = phone.replace(/[\s\-()]/g, '');
       const { data, error } = await supabase
         .from(TABLE)
         .select('*')
         .or(`customer_phone.ilike.%${cleaned}%,customer_phone.ilike.%${phone.trim()}%`)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error looking up bookings by phone:', error);
-        return [];
-      }
-      return (data as BookingRecord[]) || [];
-    } catch (err) {
-      console.error('Error looking up bookings by phone:', err);
-      return [];
-    }
+      if (!error && data && data.length > 0) return data as BookingRecord[];
+    } catch { /* fall through to localStorage */ }
+
+    // Fallback: search localStorage
+    const local = getLocalBookings();
+    const matches = local.filter(b => {
+      const bp = (b.customer_phone || '').replace(/[\s\-()]/g, '');
+      return bp.includes(cleaned) || cleaned.includes(bp);
+    });
+    return matches.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   },
 
   async createBooking(data: RepairFormData): Promise<BookingResult> {
