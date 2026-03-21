@@ -10,19 +10,35 @@ export interface DeviceBrowserSectionProps {
   defaultServiceType?: 'repair' | 'buyback' | null;
 }
 
+const FALLBACK_BRANDS: BrandRow[] = [
+  { id: 'fb-apple', name: 'Apple', logo_url: '/images/Apple/Apple.webp' },
+  { id: 'fb-samsung', name: 'Samsung', logo_url: '/images/Samsung/Samsung.webp' },
+  { id: 'fb-xiaomi', name: 'Xiaomi', logo_url: '/images/Xiaomi/Xiaomi.webp' },
+  { id: 'fb-oneplus', name: 'OnePlus', logo_url: '/images/OnePlus/OnePlus.webp' },
+  { id: 'fb-vivo', name: 'VIVO', logo_url: '/images/VIVO/vivo.webp' },
+  { id: 'fb-oppo', name: 'OPPO', logo_url: '/images/OPPO/oppo.webp' },
+  { id: 'fb-realme', name: 'Realme', logo_url: '/images/Realme/realme.webp' },
+  { id: 'fb-motorolla', name: 'Motorolla', logo_url: '/images/Motorolla/motorolla.webp' },
+  { id: 'fb-google', name: 'Google', logo_url: '/images/Google/Google.webp' },
+  { id: 'fb-nothing', name: 'Nothing', logo_url: '/images/Nothing/NOTHING.webp' },
+  { id: 'fb-iqoo', name: 'IQOO', logo_url: '/images/IQOO/iqoo.webp' },
+  { id: 'fb-poco', name: 'POCO', logo_url: '/images/POCO/poco.webp' },
+  { id: 'fb-huawei', name: 'Huawei', logo_url: '/images/Huawei/huawei.webp' },
+  { id: 'fb-asus', name: 'ASUS', logo_url: '/images/ASUS/asus.webp' },
+  { id: 'fb-lg', name: 'LG', logo_url: '/images/LG/LG.webp' },
+];
+
 export default function DeviceBrowserSection({ defaultServiceType = null }: DeviceBrowserSectionProps) {
   const navigate = useNavigate();
   const [viewState, setViewState] = useState<ViewState>('brands');
 
   const [brands, setBrands] = useState<BrandRow[]>([]);
   const [brandsLoading, setBrandsLoading] = useState(true);
-  const [brandsError, setBrandsError] = useState(false);
 
   const [selectedBrand, setSelectedBrand] = useState<BrandRow | null>(null);
 
   const [models, setModels] = useState<PhoneModelRow[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
-  const [modelsError, setModelsError] = useState(false);
 
   const [seriesList, setSeriesList] = useState<string[]>([]);
   const [selectedSeries, setSelectedSeries] = useState<string | null>(null);
@@ -30,16 +46,11 @@ export default function DeviceBrowserSection({ defaultServiceType = null }: Devi
   useEffect(() => {
     (async () => {
       setBrandsLoading(true);
-      setBrandsError(false);
       try {
         const data = await SupabaseBrandsService.getAllBrands();
-        if (data.length === 0) {
-          setBrandsError(true);
-        } else {
-          setBrands(data);
-        }
+        setBrands(data.length > 0 ? data : FALLBACK_BRANDS);
       } catch {
-        setBrandsError(true);
+        setBrands(FALLBACK_BRANDS);
       } finally {
         setBrandsLoading(false);
       }
@@ -49,7 +60,6 @@ export default function DeviceBrowserSection({ defaultServiceType = null }: Devi
   const handleBrandClick = async (brand: BrandRow) => {
     setSelectedBrand(brand);
     setModelsLoading(true);
-    setModelsError(false);
     setSelectedSeries(null);
     setSeriesList([]);
 
@@ -67,7 +77,6 @@ export default function DeviceBrowserSection({ defaultServiceType = null }: Devi
       setViewState(sorted.length > 1 ? 'categories' : 'models');
     } catch {
       setModels([]);
-      setModelsError(true);
       setViewState('models');
     } finally {
       setModelsLoading(false);
@@ -89,7 +98,6 @@ export default function DeviceBrowserSection({ defaultServiceType = null }: Devi
       setModels([]);
       setSeriesList([]);
       setSelectedSeries(null);
-      setModelsError(false);
     }
   };
 
@@ -165,44 +173,37 @@ export default function DeviceBrowserSection({ defaultServiceType = null }: Devi
 
         {/* Brands Grid */}
         {viewState === 'brands' && (
-          <>
-            {brandsLoading ? (
-              <div className="flex flex-wrap justify-center gap-4 md:gap-6">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="flex flex-col items-center gap-3 p-4 w-24 sm:w-28 md:w-32">
-                    <Skeleton className="w-20 h-20 md:w-24 md:h-24 rounded-lg" />
-                    <Skeleton className="h-4 w-16" />
+          brandsLoading ? (
+            <div className="flex flex-wrap justify-center gap-4 md:gap-6">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="flex flex-col items-center gap-3 p-4 w-24 sm:w-28 md:w-32">
+                  <Skeleton className="w-20 h-20 md:w-24 md:h-24 rounded-lg" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-wrap justify-center gap-4 md:gap-6">
+              {brands.map((brand) => (
+                <button
+                  key={brand.id}
+                  onClick={() => handleBrandClick(brand)}
+                  className="flex flex-col items-center gap-3 p-4 bg-white rounded-xl hover:shadow-lg transition-all duration-200 group w-24 sm:w-28 md:w-32 flex-shrink-0"
+                >
+                  <div className="w-20 h-20 md:w-24 md:h-24 flex items-center justify-center overflow-hidden rounded-lg bg-gray-50">
+                    <img
+                      src={brand.logo_url || '/placeholder.svg'}
+                      alt={brand.name}
+                      className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-200"
+                      loading="lazy"
+                      onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
+                    />
                   </div>
-                ))}
-              </div>
-            ) : brandsError ? (
-              <div className="text-center py-12">
-                <p className="text-gray-500 text-lg">Service temporarily unavailable</p>
-                <p className="text-gray-400 text-sm mt-2">Please try again later</p>
-              </div>
-            ) : (
-              <div className="flex flex-wrap justify-center gap-4 md:gap-6">
-                {brands.map((brand) => (
-                  <button
-                    key={brand.id}
-                    onClick={() => handleBrandClick(brand)}
-                    className="flex flex-col items-center gap-3 p-4 bg-white rounded-xl hover:shadow-lg transition-all duration-200 group w-24 sm:w-28 md:w-32 flex-shrink-0"
-                  >
-                    <div className="w-20 h-20 md:w-24 md:h-24 flex items-center justify-center overflow-hidden rounded-lg bg-gray-50">
-                      <img
-                        src={brand.logo_url || '/placeholder.svg'}
-                        alt={brand.name}
-                        className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-200"
-                        loading="lazy"
-                        onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
-                      />
-                    </div>
-                    <span className="text-sm font-medium text-gray-900 text-center">{brand.name}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </>
+                  <span className="text-sm font-medium text-gray-900 text-center">{brand.name}</span>
+                </button>
+              ))}
+            </div>
+          )
         )}
 
         {/* Series / Categories Grid */}
@@ -230,46 +231,44 @@ export default function DeviceBrowserSection({ defaultServiceType = null }: Devi
 
         {/* Models Grid */}
         {viewState === 'models' && (
-          <>
-            {modelsLoading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="flex flex-col items-center gap-3 p-3">
-                    <Skeleton className="w-full aspect-square rounded-lg" />
-                    <Skeleton className="h-4 w-20" />
+          modelsLoading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex flex-col items-center gap-3 p-3">
+                  <Skeleton className="w-full aspect-square rounded-lg" />
+                  <Skeleton className="h-4 w-20" />
+                </div>
+              ))}
+            </div>
+          ) : getDisplayModels().length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">No models found for {selectedBrand?.name}</p>
+              <p className="text-gray-400 text-sm mt-2">Models can be added via the admin panel</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+              {getDisplayModels().map((entry) => (
+                <button
+                  key={entry.id}
+                  onClick={() => handleModelClick(entry)}
+                  className="flex flex-col items-center gap-3 p-3 bg-white rounded-xl hover:shadow-lg transition-all duration-200 group cursor-pointer border-2 border-transparent hover:border-blue-500"
+                >
+                  <div className="w-full aspect-square flex items-center justify-center overflow-hidden rounded-lg bg-gray-50">
+                    <img
+                      src={entry.image_url || '/placeholder.svg'}
+                      alt={entry.model}
+                      className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-200"
+                      loading="lazy"
+                      onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
+                    />
                   </div>
-                ))}
-              </div>
-            ) : modelsError || getDisplayModels().length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-gray-500 text-lg">No models found for this brand</p>
-                <p className="text-gray-400 text-sm mt-2">Models can be added via the admin panel</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
-                {getDisplayModels().map((entry) => (
-                  <button
-                    key={entry.id}
-                    onClick={() => handleModelClick(entry)}
-                    className="flex flex-col items-center gap-3 p-3 bg-white rounded-xl hover:shadow-lg transition-all duration-200 group cursor-pointer border-2 border-transparent hover:border-blue-500"
-                  >
-                    <div className="w-full aspect-square flex items-center justify-center overflow-hidden rounded-lg bg-gray-50">
-                      <img
-                        src={entry.image_url || '/placeholder.svg'}
-                        alt={entry.model}
-                        className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-200"
-                        loading="lazy"
-                        onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
-                      />
-                    </div>
-                    <span className="text-xs sm:text-sm font-medium text-gray-900 text-center line-clamp-2">
-                      {formatModelName(entry.model)}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </>
+                  <span className="text-xs sm:text-sm font-medium text-gray-900 text-center line-clamp-2">
+                    {formatModelName(entry.model)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )
         )}
       </div>
     </section>
