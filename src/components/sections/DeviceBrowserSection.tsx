@@ -28,6 +28,113 @@ const FALLBACK_BRANDS: BrandRow[] = [
   { id: 'fb-lg', name: 'LG', logo_url: '/images/LG/LG.webp' },
 ];
 
+function fb(brand: string, model: string, series?: string): PhoneModelRow {
+  const folder = series ? `${brand}/${series}` : brand;
+  return { id: `fb-${brand}-${model}`, brand, model, series: series || null, image_url: `/images/${folder}/${model}.webp`, base_price: null };
+}
+
+const FALLBACK_MODELS: Record<string, PhoneModelRow[]> = {
+  Apple: [
+    'Iphone 16 Pro Max', 'Iphone 16 Pro', 'Iphone 16 Plus', 'Iphone 16', 'Iphone 16e',
+    'Iphone 15 Pro Max', 'Iphone 15 Pro', 'Iphone 15 Plus', 'Iphone 15',
+    'Iphone 14 pro max', 'Iphone 14 pro', 'Iphone 14 plus', 'Iphone 14',
+    'Iphone 13 Pro Max', 'Iphone 13 pro', 'Iphone 13 mini', 'Iphone 13',
+    'Iphone 12 pro max', 'Iphone 12 pro', 'Iphone 12 mini', 'Iphone 12',
+    'Iphone 11 pro max', 'Iphone 11 pro', 'Iphone 11',
+    'Iphone XS Max', 'Iphone XS', 'Iphone XR', 'Iphone X',
+    'Iphone 8 plus', 'iPhone 8', 'Iphone 7 plus', 'Iphone 7',
+    'Iphone 6s plus', 'Iphone 6s', 'Iphone 6 plus', 'Iphone 6',
+    'Iphone se 2020', 'Iphone se',
+  ].map(m => fb('Apple', m)),
+
+  Samsung: [
+    ...['Galaxy s24 Ultra', 'Galaxy S24 plus', 'Galaxy S24', 'Galaxy s23 Ultra', 'Galaxy S23 plus', 'Galaxy S23', 'Galaxy S22 Ultra 5g', 'Galaxy S22 Plus 5g', 'Galaxy S22 5G', 'Galaxy s21 fe 5g', 'Galaxy S21 Ultra 5G', 'Galaxy s21 plus 5g', 'Galaxy s21 5g', 'Galaxy s20 fe 5g', 'Galaxy s20 ultra 5g', 'Galaxy S20 Plus', 'Galaxy s20', 'Galaxy s10 plus', 'Galaxy s10', 'Galaxy s9 plus', 'Galaxy s9'].map(m => fb('Samsung', m, 'Series S')),
+    ...['Galaxy A54 5g', 'Galaxy A53 5g', 'Galaxy A52 5g', 'Galaxy A51', 'Galaxy A34 5g', 'Galaxy A33 5g', 'Galaxy A23', 'Galaxy A22', 'Galaxy A15 5g', 'Galaxy A14', 'Galaxy A13', 'Galaxy A12', 'Galaxy A04', 'Galaxy A03', 'Galaxy A02'].map(m => fb('Samsung', m, 'Series A')),
+    ...['Galaxy M54 5G', 'Galaxy M53 5G', 'Galaxy M34 5G', 'Galaxy M33 5G', 'Galaxy M32 4G', 'Galaxy M31', 'Galaxy M21', 'Galaxy M12'].map(m => fb('Samsung', m, 'Series M')),
+    ...['Galaxy note 20 ultra 5g', 'Galaxy note 20 5G', 'Galaxy Note 10 plus', 'Galaxy note 10', 'Galaxy Note 9', 'Galaxy note 8'].map(m => fb('Samsung', m, 'Series Note')),
+    ...['Galaxy F54', 'Galaxy F41 5G', 'Galaxy f23 5g', 'Galaxy F12', 'Galaxy F04'].map(m => fb('Samsung', m, 'Series F')),
+    ...['Galaxy J8', 'Galaxy J7 Pro', 'Galaxy J7 Prime', 'Galaxy J7', 'Galaxy J6 Plus', 'Galaxy J6'].map(m => fb('Samsung', m, 'Series J')),
+    ...['Galaxy Z fold 4', 'Galaxy Z fold 3 5g', 'Galaxy Z flip 4 5g', 'Galaxy Z flip 3 5g'].map(m => fb('Samsung', m, 'Series Z')),
+  ],
+
+  Xiaomi: [
+    ...['mi 11 ultra', 'mi 11 lite', 'MI 11 pro 5g', 'mi 11 5g', 'mi 10 pro', 'mi 10', 'mi a1', 'MI A3'].map(m => fb('Xiaomi', m, 'Series MI')),
+    ...['redmi note 12 pro plus 5g', 'redmi note 12 pro 5g', 'redmi note 12 5g', 'redmi note 11 pro plus 5g', 'redmi note 11 pro', 'redmi note 10 pro max', 'redmi note 10 pro', 'redmi note 10', 'redmi note 9 pro max', 'redmi note 9 pro', 'redmi note 9', 'redmi note 8 pro', 'redmi note 8', 'redmi note 7 pro', 'redmi note 7'].map(m => fb('Xiaomi', m, 'Series Note')),
+    ...['redmi 12 5g', 'redmi 10 prime', 'redmi 10', 'redmi 9 prime', 'redmi 9', 'redmi 8a', 'redmi 8', 'redmi 7a', 'redmi 7', 'redmi 6 pro', 'redmi 6'].map(m => fb('Xiaomi', m, 'Series Redmi')),
+    ...['Redmi K20', 'Redmi y2', 'Redmi Y3'].map(m => fb('Xiaomi', m, 'Series X')),
+  ],
+
+  OnePlus: [
+    'Oneplus 12 5g', 'Oneplus 12R 5g', 'Oneplus 11 5g', 'Oneplus 11R 5g',
+    'Oneplus 10 pro 5g', 'Oneplus 10T 5g', 'Oneplus 10R 5g',
+    'Oneplus 9 pro 5g', 'Oneplus 9 5g', 'Oneplus 9r 5g',
+    'Oneplus 8T', 'Oneplus 8 pro', 'Oneplus 8',
+    'Oneplus 7T pro', 'Oneplus 7T', 'Oneplus 7 pro', 'Oneplus 7',
+    'Oneplus 6T', 'Oneplus 6',
+    'Oneplus nord 3 5g', 'Oneplus nord 2T 5g', 'Oneplus nord 2 5g', 'Oneplus nord',
+    'Oneplus nord CE3 5g', 'Oneplus nord ce2 5g', 'Oneplus nord ce 5g',
+  ].map(m => fb('OnePlus', m)),
+
+  VIVO: [
+    ...['y100', 'y75 5g', 'y73', 'y56 5g', 'y35', 'y33 t', 'y27 5g', 'y22', 'y21', 'y20', 'y16', 'y15', 'y12', 'y11'].map(m => fb('VIVO', m, 'series y')),
+    ...['v29 pro', 'v29', 'v27 pro', 'v27', 'v25 pro', 'v25', 'v23 pro', 'v23 5g', 'v21', 'v20 pro', 'v20', 'v19', 'v17 pro', 'v15 pro', 'v15'].map(m => fb('VIVO', m, 'series v')),
+    ...['x80 pro', 'x80', 'x70 pro plus', 'x70 pro', 'x60 pro', 'x60', 'x50 pro', 'x50'].map(m => fb('VIVO', m, 'series x')),
+    ...['t2x 5g', 't2 5g', 't1 pro 5g', 't1 5g', 't1 x', 't1'].map(m => fb('VIVO', m, 'series t')),
+  ],
+
+  OPPO: [
+    ...['a78 5g', 'a77', 'a76', 'a74 5g', 'a58', 'a57 4g', 'a55', 'a54', 'a53 5g', 'a53', 'a52', 'a36', 'a35', 'a16', 'a15', 'a12', 'a5 2020', 'a3 s'].map(m => fb('OPPO', m, 'series a')),
+    ...['f21 s pro 5g', 'f19 pro plus 5g', 'f19 pro', 'f19', 'f15'].map(m => fb('OPPO', m, 'series f')),
+    ...['reno 10 pro plus 5g', 'reno 10 5g', 'reno 8 5g', 'reno 7 5g', 'reno 6 5g', 'reno 5 pro 5g'].map(m => fb('OPPO', m, 'series reno')),
+  ],
+
+  Realme: [
+    'realme 13 pro plus 5g', 'realme 13 pro', 'realme 12 pro plus 5g', 'realme 12 pro',
+    'realme 11 pro plus 5g', 'realme 11 pro', 'realme 9 pro plus 5g', 'realme 9',
+    'realme 8 pro', 'realme 7 pro', 'realme 7', 'realme 6 pro', 'realme 6',
+    'realme gt2 pro', 'realme gt master edition',
+    'realme narzo 50 pro', 'realme narzo 50', 'realme narzo 30 pro 5g', 'realme narzo 30',
+    'realme c67 5g',
+  ].map(m => fb('Realme', m)),
+
+  Motorolla: [
+    ...['g 84', 'g 82 5g', 'g 72', 'g 62 5g', 'g 54 5g', 'g 52', 'g 34 5g', 'g 32', 'g 31'].map(m => fb('Motorolla', m, 'series g')),
+    ...['Motorolla E 40', 'E 30', 'E 13'].map(m => fb('Motorolla', m, 'series e')),
+    ...['edge 50 pro', 'edge 50 fusion', 'edge 40 neo', 'edge 40', 'edge 30', 'edge 20'].map(m => fb('Motorolla', m, 'series x')),
+  ],
+
+  Google: [
+    'pixel 9 pro xl', 'pixel 9 pro fold', 'pixel 9 pro', 'pixel 9',
+    'pixel 8a', 'pixel 8 pro', 'pixel 8', 'pixel 7a', 'pixel 7 pro', 'pixel 7',
+    'pixel 6 pro', 'pixel 6', 'pixel 5', 'pixel 4a 5g', 'pixel 4a 4g',
+    'pixel 4 xl', 'pixel 4', 'pixel 3a xl', 'pixel 3a',
+  ].map(m => fb('Google', m)),
+
+  Nothing: [
+    'phone 2', 'nothing phone 2a', 'nothing phone 1', 'cmf phone 2 pro', 'cmf phone',
+  ].map(m => fb('Nothing', m)),
+
+  IQOO: [
+    '11 5g', '9 se 5g', '9 5g', 'neo 6 5g', 'Z7s 5g', 'Z6 lite 5g', 'Z3', '7',
+  ].map(m => fb('IQOO', m)),
+
+  POCO: [
+    'poco x4 pro 5g', 'poco x3 pro', 'poco x2', 'poco m4 pro 4g', 'poco m3 pro 5g', 'poco f1',
+  ].map(m => fb('POCO', m)),
+
+  Huawei: [
+    'p30 pro', 'honor 9 lite', 'honor 8x', 'honor 7c',
+  ].map(m => fb('Huawei', m)),
+
+  ASUS: [
+    'ROG phone 3', 'ROG phone 2', 'zenphon max pro m2',
+  ].map(m => fb('ASUS', m)),
+
+  LG: [
+    'wing 5g', 'G8 thinq',
+  ].map(m => fb('LG', m)),
+};
+
 export default function DeviceBrowserSection({ defaultServiceType = null }: DeviceBrowserSectionProps) {
   const navigate = useNavigate();
   const [viewState, setViewState] = useState<ViewState>('brands');
@@ -65,22 +172,26 @@ export default function DeviceBrowserSection({ defaultServiceType = null }: Devi
 
     try {
       const data = await SupabasePhonesService.getModelsByBrand(brand.name);
-      setModels(data);
-
-      const uniqueSeries = new Set<string>();
-      for (const m of data) {
-        if (m.series && m.series.trim()) uniqueSeries.add(m.series.trim());
-      }
-      const sorted = Array.from(uniqueSeries).sort();
-      setSeriesList(sorted);
-
-      setViewState(sorted.length > 1 ? 'categories' : 'models');
+      const resolved = data.length > 0 ? data : (FALLBACK_MODELS[brand.name] || []);
+      setModels(resolved);
+      deriveSeriesAndNavigate(resolved);
     } catch {
-      setModels([]);
-      setViewState('models');
+      const fallback = FALLBACK_MODELS[brand.name] || [];
+      setModels(fallback);
+      deriveSeriesAndNavigate(fallback);
     } finally {
       setModelsLoading(false);
     }
+  };
+
+  const deriveSeriesAndNavigate = (data: PhoneModelRow[]) => {
+    const uniqueSeries = new Set<string>();
+    for (const m of data) {
+      if (m.series && m.series.trim()) uniqueSeries.add(m.series.trim());
+    }
+    const sorted = Array.from(uniqueSeries).sort();
+    setSeriesList(sorted);
+    setViewState(sorted.length > 1 ? 'categories' : 'models');
   };
 
   const handleSeriesClick = (s: string) => {
