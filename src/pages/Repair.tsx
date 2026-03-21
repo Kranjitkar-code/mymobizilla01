@@ -4,22 +4,25 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import RepairBuybackForm from '@/components/forms/RepairBuybackForm';
+import RepairBuybackForm, { type BookingSuccessData } from '@/components/forms/RepairBuybackForm';
+import BookingSuccess from '@/components/booking/BookingSuccess';
 
 export default function Repair() {
   const navigate = useNavigate();
   const location = useLocation();
   const [showDeviceForm, setShowDeviceForm] = useState(false);
+  const [bookingResult, setBookingResult] = useState<BookingSuccessData | null>(null);
   const formAnchorRef = useRef<HTMLDivElement | null>(null);
   
-  // Check if we have a selected device from the device browser
   const selectedDevice = location.state?.selectedDevice;
 
   const handleBack = () => navigate('/');
   
-  const handleDeviceFormSuccess = () => {
+  const handleDeviceFormSuccess = (data?: BookingSuccessData) => {
     setShowDeviceForm(false);
-    alert('Your repair request has been submitted successfully! We will contact you soon.');
+    if (data) {
+      setBookingResult(data);
+    }
   };
   
   const handleDeviceFormCancel = () => {
@@ -39,12 +42,26 @@ export default function Repair() {
     }
   }, [showDeviceForm]);
 
-  // Auto-show device form if device is selected
   useEffect(() => {
     if (selectedDevice) {
       setShowDeviceForm(true);
     }
   }, [selectedDevice]);
+
+  if (bookingResult) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+        <Helmet><title>Booking Confirmed | Mobizilla</title></Helmet>
+        <BookingSuccess
+          bookingRef={bookingResult.bookingRef}
+          brand={bookingResult.brand}
+          model={bookingResult.model}
+          serviceType="repair"
+          issues={bookingResult.issues}
+        />
+      </div>
+    );
+  }
 
   if (showDeviceForm) {
     return (
@@ -105,7 +122,6 @@ export default function Repair() {
             </p>
           </div>
 
-          {/* Trust Indicators */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-8 mb-16">
             <div className="text-center">
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -130,7 +146,6 @@ export default function Repair() {
             </div>
           </div>
 
-          {/* Information */}
           <div className="max-w-3xl mx-auto mt-16 text-center">
             <div className="bg-gradient-to-r from-blue-50 to-sky-50 rounded-2xl p-8 mb-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">Ready to Fix Your Device?</h2>

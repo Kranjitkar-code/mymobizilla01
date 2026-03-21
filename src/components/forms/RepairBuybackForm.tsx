@@ -59,7 +59,7 @@ const REPAIR_ISSUE_GROUPS: { category: string; issues: string[] }[] = [
     issues: ['Not Charging', 'Charging Port Loose'],
   },
   {
-    category: 'Camera / Flash',
+    category: 'Camera/Flash',
     issues: ['Flash Light Not Working'],
   },
   {
@@ -89,7 +89,7 @@ const REPAIR_ISSUE_GROUPS: { category: string; issues: string[] }[] = [
     issues: ['Hard Disk Issue'],
   },
   {
-    category: 'Liquid Service',
+    category: 'Liquid',
     issues: ['Water Proofing', 'Water Damage', 'Moisture Detection'],
   },
   {
@@ -120,7 +120,7 @@ const REPAIR_ISSUE_GROUPS: { category: string; issues: string[] }[] = [
     ],
   },
   {
-    category: 'Camera / Face ID',
+    category: 'Camera/FaceID',
     issues: [
       'Front Camera Portrait Not Working',
       'Black Spot In Main Camera',
@@ -145,10 +145,18 @@ interface SelectedDevice {
   category?: string;
 }
 
+export interface BookingSuccessData {
+  bookingRef: string;
+  brand: string;
+  model: string;
+  serviceType: 'repair' | 'buyback';
+  issues: string;
+}
+
 interface RepairBuybackFormProps {
   selectedDevice?: SelectedDevice;
   serviceType?: 'repair' | 'buyback';
-  onSuccess?: () => void;
+  onSuccess?: (data?: BookingSuccessData) => void;
   onCancel?: () => void;
 }
 
@@ -248,7 +256,7 @@ export default function RepairBuybackForm({ selectedDevice, serviceType: initial
     if (savedForm) {
       try {
         const parsed = JSON.parse(savedForm);
-        setServiceType(parsed.serviceType || '');
+        setServiceType(initialServiceType ?? (parsed.serviceType || ''));
         if (Array.isArray(parsed.selectedIssues)) {
           setSelectedIssues(parsed.selectedIssues);
         } else if (parsed.problem) {
@@ -275,8 +283,8 @@ export default function RepairBuybackForm({ selectedDevice, serviceType: initial
         console.error('Error loading saved form:', error);
       }
     }
-  }, []);
-  
+  }, [initialServiceType]);
+
   // Save form data whenever it changes
   useEffect(() => {
     const formData = {
@@ -337,8 +345,10 @@ export default function RepairBuybackForm({ selectedDevice, serviceType: initial
     }
   };
 
+  const minStep = initialServiceType ? 2 : 1;
+
   const handlePrevious = () => {
-    if (currentStep > 1) {
+    if (currentStep > minStep) {
       setCurrentStep(currentStep - 1);
     }
   };
@@ -401,7 +411,13 @@ DEVICE SERIES: ${deviceInfo.category || 'N/A'}
       // Clear session storage
       sessionStorage.removeItem('selectedDevice');
       
-      onSuccess?.();
+      onSuccess?.({
+        bookingRef: result.bookingRef || result.tracking_code || 'MB-000000',
+        brand: deviceInfo.brand,
+        model: deviceInfo.model,
+        serviceType: (serviceType as 'repair' | 'buyback') || 'repair',
+        issues: actualProblem,
+      });
     } catch (error) {
       console.error('Error submitting form:', error);
       alert('There was an error submitting your request. Please try again.');
@@ -513,10 +529,6 @@ DEVICE SERIES: ${deviceInfo.category || 'N/A'}
                     </div>
                   ))}
                 </div>
-
-                <p className="text-sm text-muted-foreground">
-                  {selectedIssues.length} issue{selectedIssues.length === 1 ? '' : 's'} selected
-                </p>
 
                 {selectedIssues.includes('Other') && (
                   <div className="mt-4 animate-in fade-in slide-in-from-top-2">
@@ -1035,11 +1047,11 @@ DEVICE SERIES: ${deviceInfo.category || 'N/A'}
       <CardContent className="space-y-6">
         {renderStepContent()}
         
-        <div className="flex justify-between pt-6">
+        <div className="flex justify-between items-center gap-3 flex-wrap pt-6">
           <Button 
             variant="outline" 
             onClick={handlePrevious}
-            disabled={currentStep === 1}
+            disabled={currentStep <= minStep}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Previous
@@ -1054,13 +1066,20 @@ DEVICE SERIES: ${deviceInfo.category || 'N/A'}
               {isSubmitting ? 'Submitting...' : `Submit ${serviceType === 'repair' ? 'Repair' : 'Buyback'} Request`}
             </Button>
           ) : (
-            <Button 
-              onClick={handleNext}
-              disabled={!canProceed()}
-              className={serviceType === 'buyback' ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}
-            >
-              Next
-            </Button>
+            <div className="flex items-center gap-3">
+              {serviceType === 'repair' && currentStep === 2 && (
+                <span className="text-sm text-muted-foreground whitespace-nowrap">
+                  {selectedIssues.length} issue{selectedIssues.length === 1 ? '' : 's'} selected
+                </span>
+              )}
+              <Button 
+                onClick={handleNext}
+                disabled={!canProceed()}
+                className={serviceType === 'buyback' ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}
+              >
+                Next →
+              </Button>
+            </div>
           )}
         </div>
       </CardContent>

@@ -10,7 +10,7 @@ import { MOBIZILLA } from "@/config/mobizilla";
 const nav = [
   { to: "/", label: "Home" },
   { to: "/repair", label: "Repair", scrollTo: "browse-by-brand" },
-  { to: "/buyback", label: "Buy Back", scrollTo: "browse-by-brand" },
+  { to: "/buyback", label: "Buyback", scrollTo: "browse-by-brand" },
   { to: "/training", label: "Training" },
   { to: "/blog", label: "Blog" },
   { to: "/contact", label: "Contact" },
