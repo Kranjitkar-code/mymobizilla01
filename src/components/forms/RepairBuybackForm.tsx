@@ -145,10 +145,18 @@ interface SelectedDevice {
   category?: string;
 }
 
+export interface BookingSuccessData {
+  bookingRef: string;
+  brand: string;
+  model: string;
+  serviceType: 'repair' | 'buyback';
+  issues: string;
+}
+
 interface RepairBuybackFormProps {
   selectedDevice?: SelectedDevice;
   serviceType?: 'repair' | 'buyback';
-  onSuccess?: () => void;
+  onSuccess?: (data?: BookingSuccessData) => void;
   onCancel?: () => void;
 }
 
@@ -403,7 +411,13 @@ DEVICE SERIES: ${deviceInfo.category || 'N/A'}
       // Clear session storage
       sessionStorage.removeItem('selectedDevice');
       
-      onSuccess?.();
+      onSuccess?.({
+        bookingRef: result.bookingRef || result.tracking_code || 'MB-000000',
+        brand: deviceInfo.brand,
+        model: deviceInfo.model,
+        serviceType: (serviceType as 'repair' | 'buyback') || 'repair',
+        issues: actualProblem,
+      });
     } catch (error) {
       console.error('Error submitting form:', error);
       alert('There was an error submitting your request. Please try again.');
