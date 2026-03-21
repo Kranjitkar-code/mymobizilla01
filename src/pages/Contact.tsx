@@ -22,8 +22,11 @@ import {
   Star,
   Shield,
   Zap,
-  ArrowRight
+  ArrowRight,
+  Search,
+  Loader2
 } from 'lucide-react';
+import SupabaseBookingService, { type BookingRecord } from '@/services/supabaseBookingService';
 
 interface ContactFormData {
   name: string;
@@ -43,6 +46,12 @@ export default function Contact() {
     message: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Track Order state
+  const [trackInput, setTrackInput] = useState('');
+  const [trackLoading, setTrackLoading] = useState(false);
+  const [trackResults, setTrackResults] = useState<BookingRecord[]>([]);
+  const [trackSearched, setTrackSearched] = useState(false);
 
   // Get content from CMS with fallbacks
   const contactPhone = useContentItem('contact-phone', '+977-1-5354999');
@@ -106,6 +115,30 @@ export default function Contact() {
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleTrack = async () => {
+    const q = trackInput.trim();
+    if (!q) return;
+    setTrackLoading(true);
+    setTrackSearched(true);
+    setTrackResults([]);
+
+    try {
+      const isPhone = /^(\+?977|9)\d{7,}/.test(q.replace(/[\s\-()]/g, '')) || /^\d{10,}$/.test(q.replace(/[\s\-]/g, ''));
+
+      if (isPhone) {
+        const results = await SupabaseBookingService.getBookingsByPhone(q);
+        setTrackResults(results);
+      } else {
+        const result = await SupabaseBookingService.getBookingByRef(q);
+        setTrackResults(result ? [result] : []);
+      }
+    } catch {
+      setTrackResults([]);
+    } finally {
+      setTrackLoading(false);
     }
   };
 
@@ -380,17 +413,96 @@ export default function Contact() {
                   </div>
                 </Card>
 
-                {/* Improved Quick Actions */}
+                {/* Track Order */}
+                <Card id="track-order" className="border-0 shadow-lg bg-white rounded-xl overflow-hidden">
+                  <div className="p-6">
+                    <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
+                      <Search className="w-5 h-5 text-purple-600" /> Track Your Order
+                    </h3>
+                    <p className="text-sm text-gray-500 mb-4">Enter your booking reference (MB-XXXXXX) or phone number</p>
+                    <div className="flex gap-2">
+                      <Input
+                        value={trackInput}
+                        onChange={e => setTrackInput(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleTrack()}
+                        placeholder="MB-450123 or 98XXXXXXXX"
+                        className="h-11"
+                        disabled={trackLoading}
+                      />
+                      <Button onClick={handleTrack} disabled={trackLoading || !trackInput.trim()} className="h-11 px-4 bg-purple-600 hover:bg-purple-700">
+                        {trackLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                      </Button>
+                    </div>
+
+                    {trackSearched && !trackLoading && trackResults.length === 0 && (
+                      <div className="mt-4 p-4 bg-gray-50 rounded-lg text-center">
+                        <p className="text-sm text-gray-500">No booking found. Please check your reference number or phone.</p>
+                      </div>
+                    )}
+
+                    {trackResults.length > 0 && (
+                      <div className="mt-4 space-y-3">
+                        {trackResults.map(booking => {
+                          const status = (booking.status || 'pending').toLowerCase();
+                          const statusConfig: Record<string, { color: string; bg: string; label: string }> = {
+                            pending: { color: 'text-gray-700', bg: 'bg-gray-100', label: 'Pending — We will contact you shortly' },
+                            in_progress: { color: 'text-blue-700', bg: 'bg-blue-100', label: 'In Progress — Your device is being repaired' },
+                            ready: { color: 'text-green-700', bg: 'bg-green-100', label: 'Ready for Pickup — Your device is ready!' },
+                            completed: { color: 'text-emerald-800', bg: 'bg-emerald-100', label: 'Completed — Thank you!' },
+                            cancelled: { color: 'text-red-700', bg: 'bg-red-100', label: 'Cancelled — Please contact us' },
+                          };
+                          const sc = statusConfig[status] || statusConfig.pending;
+                          const isBuyback = (booking.issue || '').toLowerCase().includes('buyback');
+
+                          return (
+                            <div key={booking.id} className="p-4 border rounded-xl space-y-3 bg-white">
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-purple-700 text-lg">{booking.tracking_code}</span>
+                                <Badge variant="secondary" className="text-xs capitalize">{isBuyback ? 'Buyback' : 'Repair'}</Badge>
+                              </div>
+
+                              <div className={`px-3 py-2 rounded-lg text-sm font-medium ${sc.bg} ${sc.color}`}>
+                                {sc.label}
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-2 text-sm">
+                                <div>
+                                  <span className="text-gray-400 text-xs">Device</span>
+                                  <p className="font-medium text-gray-900">{booking.brand} {booking.model}</p>
+                                </div>
+                                <div>
+                                  <span className="text-gray-400 text-xs">Submitted</span>
+                                  <p className="font-medium text-gray-900">{new Date(booking.created_at).toLocaleDateString()}</p>
+                                </div>
+                              </div>
+
+                              {booking.issue && !isBuyback && (
+                                <div>
+                                  <span className="text-gray-400 text-xs">Issues</span>
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {booking.issue.split(';').map((iss, i) => (
+                                      <span key={i} className="inline-block bg-gray-50 border rounded-full px-2 py-0.5 text-xs text-gray-600">{iss.trim()}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </Card>
+
+                {/* Quick Actions */}
                 <Card className="border-0 shadow-lg bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl overflow-hidden">
                   <div className="p-6">
                     <h3 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2">
                       <Zap className="w-5 h-5 text-amber-500" /> Quick Actions
                     </h3>
                     <div className="space-y-3">
-                      <a
-                        href="https://docs.google.com/forms/d/e/1FAIpQLSdH99rXhXqpxtzTmCgzMaFXwWUYOj6gqVoaebgBgY6T-E1R4g/viewform"
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <Link
+                        to="/repair"
                         className="flex items-center gap-4 p-4 bg-white rounded-xl shadow-sm border border-transparent hover:border-blue-300 hover:shadow-md transition-all duration-300 group cursor-pointer"
                       >
                         <div className="bg-blue-100 p-2 rounded-lg group-hover:bg-blue-600 transition-colors">
@@ -398,17 +510,6 @@ export default function Contact() {
                         </div>
                         <span className="font-semibold text-gray-700 group-hover:text-blue-700">Book a Repair</span>
                         <ArrowRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-blue-600" />
-                      </a>
-
-                      <Link
-                        to="/track"
-                        className="flex items-center gap-4 p-4 bg-white rounded-xl shadow-sm border border-transparent hover:border-blue-300 hover:shadow-md transition-all duration-300 group cursor-pointer"
-                      >
-                        <div className="bg-purple-100 p-2 rounded-lg group-hover:bg-purple-600 transition-colors">
-                          <MessageSquare className="h-5 w-5 text-purple-600 group-hover:text-white" />
-                        </div>
-                        <span className="font-semibold text-gray-700 group-hover:text-purple-700">Track Order</span>
-                        <ArrowRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-purple-600" />
                       </Link>
 
                       <Link
@@ -418,7 +519,7 @@ export default function Contact() {
                         <div className="bg-amber-100 p-2 rounded-lg group-hover:bg-amber-600 transition-colors">
                           <Star className="h-5 w-5 text-amber-600 group-hover:text-white" />
                         </div>
-                        <span className="font-semibold text-gray-700 group-hover:text-amber-700">Get Quote</span>
+                        <span className="font-semibold text-gray-700 group-hover:text-amber-700">Get Buyback Quote</span>
                         <ArrowRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-amber-600" />
                       </Link>
                     </div>

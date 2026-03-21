@@ -32,7 +32,64 @@ function calculateEstimatedCost(data: RepairFormData): number {
   return Math.round(base * mult);
 }
 
+export interface BookingRecord {
+  id: string;
+  device_category: string;
+  brand: string;
+  model: string;
+  issue: string;
+  customer_name: string;
+  customer_email: string;
+  customer_phone: string;
+  description: string | null;
+  tracking_code: string;
+  estimated_cost: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export const SupabaseBookingService = {
+  async getBookingByRef(ref: string): Promise<BookingRecord | null> {
+    try {
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select('*')
+        .ilike('tracking_code', ref.trim())
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error looking up booking by ref:', error);
+        return null;
+      }
+      return (data as BookingRecord) || null;
+    } catch (err) {
+      console.error('Error looking up booking:', err);
+      return null;
+    }
+  },
+
+  async getBookingsByPhone(phone: string): Promise<BookingRecord[]> {
+    try {
+      const cleaned = phone.replace(/[\s\-()]/g, '');
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select('*')
+        .or(`customer_phone.ilike.%${cleaned}%,customer_phone.ilike.%${phone.trim()}%`)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error looking up bookings by phone:', error);
+        return [];
+      }
+      return (data as BookingRecord[]) || [];
+    } catch (err) {
+      console.error('Error looking up bookings by phone:', err);
+      return [];
+    }
+  },
+
   async createBooking(data: RepairFormData): Promise<BookingResult> {
     const bookingRef = generateBookingRef();
     const estimatedCost = calculateEstimatedCost(data);
