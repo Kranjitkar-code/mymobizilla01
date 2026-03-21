@@ -12,10 +12,16 @@ import {
   type CarouselApi,
 } from '@/components/ui/carousel';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Card, CardContent } from '@/components/ui/card';
 import DeviceBrowserSection from '@/components/sections/DeviceBrowserSection';
 import SupabaseBannersService from '@/services/supabaseBannersService';
 import SupabaseWhyChooseService, { type WhyChooseRow } from '@/services/supabaseWhyChooseService';
 import SupabaseVideosService from '@/services/supabaseVideosService';
+import SupabaseServicesService, { type ServiceRow } from '@/services/supabaseServicesService';
+import SupabaseTestimonialsService, { type TestimonialRow } from '@/services/supabaseTestimonialsService';
+import SupabaseTeamService, { type TeamMemberRow } from '@/services/supabaseTeamService';
+import SupabaseFaqService, { type FaqItem } from '@/services/supabaseFaqService';
 
 const DEFAULT_BANNERS = [
   { image_url: '/images/01.webp', link_url: '/repair' },
@@ -36,6 +42,29 @@ const DEFAULT_WHY_CHOOSE = [
 const DEFAULT_VIDEOS = [
   { title: 'Mobizilla Video 1', video_url: 'https://www.youtube.com/embed/bE4zoJWuauU?si=os7cFKaru7adn8iC' },
   { title: 'Mobizilla Video 2', video_url: 'https://www.youtube.com/embed/GNZ3UcbMuPc' },
+];
+
+const DEFAULT_SERVICES: { title: string; description: string; price_range: string; icon: string }[] = [
+  { title: 'Screen Replacement', description: 'Professional screen replacement for all smartphone models with genuine parts', price_range: '₨1,500 - ₨8,000', icon: '📱' },
+  { title: 'Battery Replacement', description: 'High-quality battery replacement with 1-year warranty', price_range: '₨800 - ₨3,500', icon: '🔋' },
+  { title: 'Water Damage Repair', description: 'Expert water damage treatment and motherboard repair', price_range: '₨3,999+', icon: '💧' },
+];
+
+const DEFAULT_TESTIMONIALS: { name: string; content: string; rating: number }[] = [
+  { name: 'Rajesh K.', content: 'Got my iPhone screen replaced here. Excellent work and the price was very fair. Highly recommended!', rating: 5 },
+  { name: 'Suman S.', content: 'Sold my old Samsung phone through their buyback program. Fast payment and smooth process.', rating: 4 },
+  { name: 'Priya M.', content: 'The team is very professional. They fixed my water-damaged phone when others said it was impossible!', rating: 5 },
+];
+
+const DEFAULT_TEAM: { name: string; role: string; photo_url: string | null }[] = [
+  { name: 'Mobizilla Team', role: 'Expert Technicians', photo_url: null },
+];
+
+const DEFAULT_FAQS: { question: string; answer: string }[] = [
+  { question: 'What products do you sell?', answer: 'We offer a wide range of mobile phones, phone accessories, and replacement parts (screens, batteries, charging ports, etc.).' },
+  { question: 'Do you provide repair services?', answer: 'Yes, we offer repair services for various mobile phone issues such as screen replacements, battery issues, charging problems, and more.' },
+  { question: 'How do I schedule a repair?', answer: 'You can schedule a repair directly through our website by selecting your phone model and describing the issue.' },
+  { question: 'Do you offer warranties on repairs and parts?', answer: 'Yes, we offer a warranty on both repairs and parts. Warranty periods vary depending on the type of service or part purchased.' },
 ];
 
 const WHY_CHOOSE_COLORS = ['blue', 'green', 'purple', 'orange', 'sky', 'amber', 'rose', 'teal'];
@@ -63,6 +92,22 @@ export default function Home() {
   const [videos, setVideos] = useState<{ title: string; video_url: string }[]>([]);
   const [videosLoading, setVideosLoading] = useState(true);
 
+  // Services — Supabase-backed
+  const [services, setServices] = useState<{ title: string; description: string; price_range: string; icon: string }[]>([]);
+  const [servicesLoading, setServicesLoading] = useState(true);
+
+  // Testimonials — Supabase-backed
+  const [testimonials, setTestimonials] = useState<{ name: string; content: string; rating: number; image_url?: string | null }[]>([]);
+  const [testimonialsLoading, setTestimonialsLoading] = useState(true);
+
+  // Team — Supabase-backed
+  const [team, setTeam] = useState<{ name: string; role: string; photo_url: string | null }[]>([]);
+  const [teamLoading, setTeamLoading] = useState(true);
+
+  // FAQ — Supabase-backed
+  const [faqs, setFaqs] = useState<{ question: string; answer: string }[]>([]);
+  const [faqsLoading, setFaqsLoading] = useState(true);
+
   useEffect(() => {
     SupabaseBannersService.getActiveBanners().then(rows => {
       setBanners(rows.length > 0
@@ -79,6 +124,30 @@ export default function Home() {
         ? rows.map(r => ({ title: r.title, video_url: r.video_url }))
         : DEFAULT_VIDEOS);
       setVideosLoading(false);
+    });
+    SupabaseServicesService.getAll().then(rows => {
+      setServices(rows.length > 0
+        ? rows.map(r => ({ title: r.title, description: r.description || '', price_range: r.price_range || '', icon: r.icon || '🔧' }))
+        : DEFAULT_SERVICES);
+      setServicesLoading(false);
+    });
+    SupabaseTestimonialsService.getAll().then(rows => {
+      setTestimonials(rows.length > 0
+        ? rows.map(r => ({ name: r.name, content: r.content || '', rating: r.rating || 5, image_url: r.image_url }))
+        : DEFAULT_TESTIMONIALS);
+      setTestimonialsLoading(false);
+    });
+    SupabaseTeamService.getAll().then(rows => {
+      setTeam(rows.length > 0
+        ? rows.map(r => ({ name: r.name, role: r.role || '', photo_url: r.photo_url }))
+        : DEFAULT_TEAM);
+      setTeamLoading(false);
+    });
+    SupabaseFaqService.getAllFaqs().then(rows => {
+      setFaqs(rows.length > 0
+        ? rows.map(r => ({ question: r.question, answer: r.answer }))
+        : DEFAULT_FAQS);
+      setFaqsLoading(false);
     });
   }, []);
 
@@ -239,6 +308,80 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Services Section */}
+      <section id="services" className="py-16 bg-white">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Our Repair Services</h2>
+            <p className="text-lg text-gray-600">Professional repair solutions for all your devices</p>
+          </div>
+          {servicesLoading ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[0, 1, 2].map(i => (
+                <Card key={i}><CardContent className="p-6"><Skeleton className="h-12 w-12 rounded-xl mb-4" /><Skeleton className="h-5 w-40 mb-2" /><Skeleton className="h-4 w-full mb-1" /><Skeleton className="h-4 w-3/4" /></CardContent></Card>
+              ))}
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {services.map((s, idx) => (
+                <Card key={idx} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="text-4xl mb-4">{s.icon}</div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{s.title}</h3>
+                    <p className="text-sm text-gray-600 mb-3">{s.description}</p>
+                    {s.price_range && <p className="text-sm font-medium text-blue-600">{s.price_range}</p>}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section id="testimonials" className="py-16 bg-gray-50">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">What Our Customers Say</h2>
+            <p className="text-lg text-gray-600">Real reviews from real customers</p>
+          </div>
+          {testimonialsLoading ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[0, 1, 2].map(i => (
+                <Card key={i}><CardContent className="p-6"><Skeleton className="h-4 w-full mb-2" /><Skeleton className="h-4 w-3/4 mb-4" /><Skeleton className="h-4 w-24" /></CardContent></Card>
+              ))}
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {testimonials.map((t, idx) => (
+                <Card key={idx} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      {t.image_url ? (
+                        <img src={t.image_url} alt={t.name} className="w-12 h-12 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold text-lg">
+                          {t.name.charAt(0)}
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-semibold text-gray-900">{t.name}</p>
+                        <div className="flex text-amber-400 text-sm">
+                          {Array.from({ length: 5 }, (_, i) => (
+                            <span key={i}>{i < t.rating ? '★' : '☆'}</span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600 italic">"{t.content}"</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* Why Choose Section */}
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -301,6 +444,65 @@ export default function Home() {
                 );
               })}
             </div>
+          )}
+        </div>
+      </section>
+
+      {/* Team Members Section */}
+      <section id="team" className="py-16 bg-gray-50">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Meet Our Team</h2>
+            <p className="text-lg text-gray-600">The experts behind every repair</p>
+          </div>
+          {teamLoading ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[0, 1, 2, 3].map(i => (
+                <div key={i} className="text-center"><Skeleton className="w-24 h-24 rounded-full mx-auto mb-4" /><Skeleton className="h-5 w-32 mx-auto mb-2" /><Skeleton className="h-4 w-24 mx-auto" /></div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {team.map((m, idx) => (
+                <div key={idx} className="text-center">
+                  {m.photo_url ? (
+                    <img src={m.photo_url} alt={m.name} className="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-2 border-gray-200" />
+                  ) : (
+                    <div className="w-24 h-24 rounded-full mx-auto mb-4 bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-2xl border-2 border-gray-200">
+                      {m.name.charAt(0)}
+                    </div>
+                  )}
+                  <h3 className="font-semibold text-gray-900">{m.name}</h3>
+                  <p className="text-sm text-gray-600">{m.role}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section id="faq" className="py-16 bg-white">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Frequently Asked Questions</h2>
+            <p className="text-lg text-gray-600">Got questions? We've got answers.</p>
+          </div>
+          {faqsLoading ? (
+            <div className="space-y-4">
+              {[0, 1, 2, 3].map(i => (
+                <Skeleton key={i} className="h-14 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : (
+            <Accordion type="single" collapsible className="w-full">
+              {faqs.map((faq, idx) => (
+                <AccordionItem key={idx} value={`faq-${idx}`} className="border rounded-lg px-4 mb-2">
+                  <AccordionTrigger className="text-left font-medium">{faq.question}</AccordionTrigger>
+                  <AccordionContent className="text-gray-600 whitespace-pre-wrap">{faq.answer}</AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
           )}
         </div>
       </section>
