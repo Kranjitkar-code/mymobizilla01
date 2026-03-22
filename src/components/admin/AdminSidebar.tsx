@@ -15,13 +15,13 @@ import { sidebarConfig } from "./sidebar-config";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, LogOut } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
-import { useWordPressAuth } from "@/contexts/WordPressAuthContext";
+import { useAdminAuth } from "@/contexts/AdminAuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export function AdminSidebar() {
     const location = useLocation();
-    const { user, logout } = useWordPressAuth();
+    const { user, logout } = useAdminAuth();
 
     return (
         <Sidebar variant="sidebar" collapsible="icon">

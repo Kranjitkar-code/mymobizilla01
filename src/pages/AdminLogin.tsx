@@ -6,7 +6,8 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Lock, Shield, User } from "lucide-react";
 import { Helmet } from 'react-helmet-async';
-import { useWordPressAuth } from '@/contexts/WordPressAuthContext';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -14,15 +15,9 @@ export default function AdminLogin() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { loginAdmin } = useWordPressAuth();
+  const { isAuthenticated } = useAdminAuth();
 
-  // Check if already logged in - only check once on mount
-  const [isLoggedIn] = useState(() => {
-    return localStorage.getItem('adminLoggedIn') === 'true' && 
-           localStorage.getItem('adminToken');
-  });
-
-  if (isLoggedIn) {
+  if (isAuthenticated) {
     return <Navigate to="/admin/dashboard" replace />;
   }
 
@@ -32,35 +27,16 @@ export default function AdminLogin() {
     setLoading(true);
 
     try {
-      // Get admin credentials from environment variables
-      const envAdminEmail = import.meta.env.VITE_ADMIN_EMAIL;
-      const envAdminPassword = import.meta.env.VITE_ADMIN_PASSWORD;
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-      // Check if credentials match environment variables (Simple secure authentication)
-      if (email === envAdminEmail && password === envAdminPassword) {
-        // Store admin session
-        localStorage.setItem('adminLoggedIn', 'true');
-        localStorage.setItem('adminEmail', email);
-        localStorage.setItem('adminLoginTime', new Date().toISOString());
-        
-        // Create a simple token for session validation
-        const token = btoa(`${email}:${Date.now()}`);
-        localStorage.setItem('adminToken', token);
-        
-        // Update auth context so dashboard sees logged-in state immediately (fixes redirect loop)
-        loginAdmin(email);
-        
-        navigate('/admin/dashboard');
-      } else {
-        // Invalid credentials
-        throw new Error('Invalid email or password. Please check your credentials and try again.');
-      }
+      if (authError) throw authError;
+
+      navigate('/admin/dashboard');
     } catch (err) {
-      console.error('Login error:', err);
-      const errorMessage = err instanceof Error ? 
-        err.message : 
-        'An error occurred during login. Please check your credentials.';
-      setError(errorMessage);
+      setError('Invalid email or password. Please check your credentials.');
     } finally {
       setLoading(false);
     }

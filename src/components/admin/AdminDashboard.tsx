@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { useWordPressAuth } from '@/contexts/WordPressAuthContext';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { TrendingUp, Users, ShoppingCart, Activity, Gauge, Zap, Layout, Search as SearchIcon, ArrowRight } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -8,28 +8,38 @@ import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
 
 interface DashboardStats {
-  repairCount: number;
-  orderCount: number;
+  totalOrders: number;
+  recentRepairs: number;
+  uniqueUsers: number;
 }
 
 const AdminDashboard = () => {
-  const { user } = useWordPressAuth();
-  const [stats, setStats] = useState<DashboardStats>({ repairCount: 573, orderCount: 1234 });
+  const { user } = useAdminAuth();
+  const [stats, setStats] = useState<DashboardStats>({ totalOrders: 0, recentRepairs: 0, uniqueUsers: 0 });
   const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [repairResult, orderResult] = await Promise.all([
-          supabase.from('repair_orders').select('id', { count: 'exact', head: true }),
-          supabase.from('orders').select('id', { count: 'exact', head: true }),
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+        const [orderResult, recentResult, usersResult] = await Promise.all([
+          supabase.from('orders').select('*', { count: 'exact', head: true }),
+          supabase.from('orders').select('*', { count: 'exact', head: true }).gte('created_at', thirtyDaysAgo),
+          supabase.from('orders').select('phone'),
         ]);
+
+        const uniquePhones = new Set(
+          (usersResult.data || []).map((r: any) => r.phone).filter(Boolean)
+        );
+
         setStats({
-          repairCount: repairResult.count ?? 573,
-          orderCount: orderResult.count ?? 1234,
+          totalOrders: orderResult.count ?? 0,
+          recentRepairs: recentResult.count ?? 0,
+          uniqueUsers: uniquePhones.size,
         });
       } catch {
-        // silently keep defaults
+        // keep zeros on error
       } finally {
         setStatsLoading(false);
       }
@@ -52,8 +62,8 @@ const AdminDashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Total Revenue</p>
-              <h3 className="text-2xl font-bold mt-2">₨45,231</h3>
-              <p className="text-xs text-green-600 mt-1">+20.1% from last month</p>
+              <h3 className="text-2xl font-bold mt-2">₨0</h3>
+              <p className="text-xs text-muted-foreground mt-1">Pricing system pending</p>
             </div>
             <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
               <TrendingUp className="h-6 w-6 text-blue-600" />
@@ -64,9 +74,11 @@ const AdminDashboard = () => {
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Active Users</p>
-              <h3 className="text-2xl font-bold mt-2">2,350</h3>
-              <p className="text-xs text-green-600 mt-1">+180 this week</p>
+              <p className="text-sm font-medium text-muted-foreground">Unique Customers</p>
+              <h3 className="text-2xl font-bold mt-2">
+                {statsLoading ? '…' : stats.uniqueUsers.toLocaleString()}
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">Unique phone numbers from orders</p>
             </div>
             <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
               <Users className="h-6 w-6 text-green-600" />
@@ -79,9 +91,9 @@ const AdminDashboard = () => {
             <div>
               <p className="text-sm font-medium text-muted-foreground">Total Orders</p>
               <h3 className="text-2xl font-bold mt-2">
-                {statsLoading ? '…' : stats.orderCount.toLocaleString()}
+                {statsLoading ? '…' : stats.totalOrders.toLocaleString()}
               </h3>
-              <p className="text-xs text-green-600 mt-1">+12% from last month</p>
+              <p className="text-xs text-muted-foreground mt-1">All time</p>
             </div>
             <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
               <ShoppingCart className="h-6 w-6 text-purple-600" />
@@ -94,9 +106,9 @@ const AdminDashboard = () => {
             <div>
               <p className="text-sm font-medium text-muted-foreground">Repair Requests</p>
               <h3 className="text-2xl font-bold mt-2">
-                {statsLoading ? '…' : stats.repairCount.toLocaleString()}
+                {statsLoading ? '…' : stats.recentRepairs.toLocaleString()}
               </h3>
-              <p className="text-xs text-orange-600 mt-1">+7% from last month</p>
+              <p className="text-xs text-muted-foreground mt-1">Last 30 days</p>
             </div>
             <div className="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center">
               <Activity className="h-6 w-6 text-orange-600" />

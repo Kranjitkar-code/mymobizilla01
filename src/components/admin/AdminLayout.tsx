@@ -10,7 +10,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { useWordPressAuth } from '@/contexts/WordPressAuthContext';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useEffect, useMemo } from 'react';
 
 function formatSegment(segment: string): string {
@@ -21,7 +21,7 @@ function formatSegment(segment: string): string {
 }
 
 export function AdminLayout() {
-  const { isAuthenticated, isLoading } = useWordPressAuth();
+  const { isAuthenticated, isLoading } = useAdminAuth();
   const navigate = useNavigate();
   const location = useLocation();
 

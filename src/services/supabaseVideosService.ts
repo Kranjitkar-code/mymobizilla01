@@ -9,7 +9,7 @@ export interface VideoRow {
     created_at?: string;
 }
 
-const TABLE = 'videos';
+const TABLE = 'video_lists';
 
 export const SupabaseVideosService = {
     async getAll(): Promise<VideoRow[]> {

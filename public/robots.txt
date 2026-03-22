@@ -1,17 +1,7 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
 User-agent: *
 Allow: /
+Disallow: /admin/
+Disallow: /admin/login
+Disallow: /api/
 
-# Product image placeholders
-Sitemap: /sitemap.xml
+Sitemap: https://mymobizilla.com/sitemap.xml

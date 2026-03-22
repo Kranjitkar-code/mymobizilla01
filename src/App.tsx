@@ -3,7 +3,7 @@ import { Toaster } from './components/ui/toaster';
 import { HelmetProvider } from 'react-helmet-async';
 import { CartProvider } from './lib/cart';
 import { ContentProvider } from './contexts/ContentContext';
-import { WordPressAuthProvider } from './contexts/WordPressAuthContext';
+import { AdminAuthProvider } from './contexts/AdminAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
 import { useContent } from './contexts/ContentContext';
@@ -263,13 +263,13 @@ function AppContent() {
 function App() {
   return (
     <HelmetProvider>
-      <WordPressAuthProvider>
+      <AdminAuthProvider>
         <ContentProvider>
           <CartProvider>
             <AppContent />
           </CartProvider>
         </ContentProvider>
-      </WordPressAuthProvider>
+      </AdminAuthProvider>
     </HelmetProvider>
   );
 }

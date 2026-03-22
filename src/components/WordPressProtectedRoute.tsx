@@ -1,27 +1,14 @@
-import { ReactNode, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import { useWordPressAuth } from '@/contexts/WordPressAuthContext';
+import { ReactNode } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { Loader2 } from 'lucide-react';
 
-interface WordPressProtectedRouteProps {
+interface ProtectedRouteProps {
   children: ReactNode;
-  adminOnly?: boolean;
 }
 
-export default function WordPressProtectedRoute({ 
-  children, 
-  adminOnly = false 
-}: WordPressProtectedRouteProps) {
-  const { isAuthenticated, isLoading, user } = useWordPressAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push('/admin/login');
-    } else if (!isLoading && isAuthenticated && adminOnly && !user?.roles?.includes('administrator')) {
-      router.push('/admin/unauthorized');
-    }
-  }, [isAuthenticated, isLoading, router, adminOnly, user]);
+export default function ProtectedRoute({ children }: ProtectedRouteProps) {
+  const { isAuthenticated, isLoading } = useAdminAuth();
 
   if (isLoading) {
     return (
@@ -31,8 +18,8 @@ export default function WordPressProtectedRoute({
     );
   }
 
-  if (!isAuthenticated || (adminOnly && !user?.roles?.includes('administrator'))) {
-    return null;
+  if (!isAuthenticated) {
+    return <Navigate to="/admin/login" replace />;
   }
 
   return <>{children}</>;
