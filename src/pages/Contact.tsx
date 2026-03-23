@@ -452,13 +452,13 @@ export default function Contact() {
                             cancelled: { color: 'text-red-700', bg: 'bg-red-100', label: 'Cancelled — Please contact us' },
                           };
                           const sc = statusConfig[status] || statusConfig.pending;
-                          const isBuyback = (booking.issue || '').toLowerCase().includes('buyback');
+                          const isBuyback = (booking.service_type || booking.issues || '').toLowerCase().includes('buyback');
 
                           return (
                             <div key={booking.id} className="p-4 border rounded-xl space-y-3 bg-white">
                               <div className="flex items-center justify-between">
-                                <span className="font-bold text-purple-700 text-lg">{booking.tracking_code}</span>
-                                <Badge variant="secondary" className="text-xs capitalize">{isBuyback ? 'Buyback' : 'Repair'}</Badge>
+                                <span className="font-bold text-purple-700 text-lg">{booking.booking_ref}</span>
+                                <Badge variant="secondary" className="text-xs capitalize">{booking.service_type || (isBuyback ? 'Buyback' : 'Repair')}</Badge>
                               </div>
 
                               <div className={`px-3 py-2 rounded-lg text-sm font-medium ${sc.bg} ${sc.color}`}>
@@ -468,7 +468,7 @@ export default function Contact() {
                               <div className="grid grid-cols-2 gap-2 text-sm">
                                 <div>
                                   <span className="text-gray-400 text-xs">Device</span>
-                                  <p className="font-medium text-gray-900">{booking.brand} {booking.model}</p>
+                                  <p className="font-medium text-gray-900">{booking.device_brand} {booking.device_model}</p>
                                 </div>
                                 <div>
                                   <span className="text-gray-400 text-xs">Submitted</span>
@@ -476,11 +476,11 @@ export default function Contact() {
                                 </div>
                               </div>
 
-                              {booking.issue && !isBuyback && (
+                              {booking.issues && !isBuyback && (
                                 <div>
                                   <span className="text-gray-400 text-xs">Issues</span>
                                   <div className="flex flex-wrap gap-1 mt-1">
-                                    {booking.issue.split(';').map((iss, i) => (
+                                    {booking.issues.split(';').map((iss, i) => (
                                       <span key={i} className="inline-block bg-gray-50 border rounded-full px-2 py-0.5 text-xs text-gray-600">{iss.trim()}</span>
                                     ))}
                                   </div>
