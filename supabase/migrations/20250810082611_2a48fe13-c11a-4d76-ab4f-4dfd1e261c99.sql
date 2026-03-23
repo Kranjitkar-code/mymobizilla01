@@ -1,4 +1,4 @@
--- Enable required extension for UUID and random code generation
+-- Optional; random public codes use core md5() below (no extensions.gen_random_bytes needed)
 create extension if not exists pgcrypto;
 
 -- Utility: updated_at trigger
@@ -59,7 +59,7 @@ create table if not exists public.services (
 -- Repair bookings
 create table if not exists public.bookings (
   id uuid primary key default gen_random_uuid(),
-  public_code text not null unique default encode(gen_random_bytes(6), 'hex'),
+  public_code text not null unique default substring(md5(random()::text || clock_timestamp()::text) from 1 for 12),
   name text not null,
   email text,
   phone text,
@@ -138,12 +138,15 @@ create table if not exists public.videos (
   created_at timestamptz not null default now()
 );
 
--- Contact messages
+-- Contact messages (extended shape for site form + admin/CMS)
 create table if not exists public.contact_messages (
   id uuid primary key default gen_random_uuid(),
-  name text not null,
+  name text,
   email text,
+  phone text,
+  interest text,
   message text not null,
+  status text not null default 'unread',
   created_at timestamptz not null default now()
 );
 
@@ -166,20 +169,30 @@ alter table public.blog_posts enable row level security;
 alter table public.videos enable row level security;
 alter table public.contact_messages enable row level security;
 
--- Public read policies for catalog-like data
-create policy if not exists "categories_public_read" on public.categories for select using (true);
-create policy if not exists "products_public_read" on public.products for select using (is_active);
-create policy if not exists "product_images_public_read" on public.product_images for select using (true);
-create policy if not exists "services_public_read" on public.services for select using (true);
-create policy if not exists "courses_public_read" on public.courses for select using (true);
-create policy if not exists "videos_public_read" on public.videos for select using (true);
-create policy if not exists "buyback_models_public_read" on public.buyback_models for select using (true);
+-- Public read policies (PG14-compatible: no CREATE POLICY IF NOT EXISTS)
+drop policy if exists "categories_public_read" on public.categories;
+create policy "categories_public_read" on public.categories for select using (true);
+drop policy if exists "products_public_read" on public.products;
+create policy "products_public_read" on public.products for select using (is_active);
+drop policy if exists "product_images_public_read" on public.product_images;
+create policy "product_images_public_read" on public.product_images for select using (true);
+drop policy if exists "services_public_read" on public.services;
+create policy "services_public_read" on public.services for select using (true);
+drop policy if exists "courses_public_read" on public.courses;
+create policy "courses_public_read" on public.courses for select using (true);
+drop policy if exists "videos_public_read" on public.videos;
+create policy "videos_public_read" on public.videos for select using (true);
+drop policy if exists "buyback_models_public_read" on public.buyback_models;
+create policy "buyback_models_public_read" on public.buyback_models for select using (true);
 
--- Blog: only published visible
-create policy if not exists "blog_public_read_published" on public.blog_posts for select using (status = 'published');
+drop policy if exists "blog_public_read_published" on public.blog_posts;
+create policy "blog_public_read_published" on public.blog_posts for select using (status = 'published');
 
--- Insert-only submissions (anonymous allowed)
-create policy if not exists "bookings_insert_anyone" on public.bookings for insert with check (true);
-create policy if not exists "buyback_quotes_insert_anyone" on public.buyback_quotes for insert with check (true);
-create policy if not exists "enrollments_insert_anyone" on public.enrollments for insert with check (true);
-create policy if not exists "contact_messages_insert_anyone" on public.contact_messages for insert with check (true);
+drop policy if exists "bookings_insert_anyone" on public.bookings;
+create policy "bookings_insert_anyone" on public.bookings for insert with check (true);
+drop policy if exists "buyback_quotes_insert_anyone" on public.buyback_quotes;
+create policy "buyback_quotes_insert_anyone" on public.buyback_quotes for insert with check (true);
+drop policy if exists "enrollments_insert_anyone" on public.enrollments;
+create policy "enrollments_insert_anyone" on public.enrollments for insert with check (true);
+drop policy if exists "contact_messages_insert_anyone" on public.contact_messages;
+create policy "contact_messages_insert_anyone" on public.contact_messages for insert with check (true);

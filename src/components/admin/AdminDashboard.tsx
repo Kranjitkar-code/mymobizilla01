@@ -24,13 +24,16 @@ const AdminDashboard = () => {
         const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
         const [orderResult, recentResult, usersResult] = await Promise.all([
-          supabase.from('orders').select('*', { count: 'exact', head: true }),
-          supabase.from('orders').select('*', { count: 'exact', head: true }).gte('created_at', thirtyDaysAgo),
-          supabase.from('orders').select('phone'),
+          supabase.from('repair_orders').select('*', { count: 'exact', head: true }),
+          supabase
+            .from('repair_orders')
+            .select('*', { count: 'exact', head: true })
+            .gte('created_at', thirtyDaysAgo),
+          supabase.from('repair_orders').select('customer_phone'),
         ]);
 
         const uniquePhones = new Set(
-          (usersResult.data || []).map((r: any) => r.phone).filter(Boolean)
+          (usersResult.data || []).map((r: { customer_phone?: string }) => r.customer_phone).filter(Boolean),
         );
 
         setStats({
@@ -78,7 +81,7 @@ const AdminDashboard = () => {
               <h3 className="text-2xl font-bold mt-2">
                 {statsLoading ? '…' : stats.uniqueUsers.toLocaleString()}
               </h3>
-              <p className="text-xs text-muted-foreground mt-1">Unique phone numbers from orders</p>
+              <p className="text-xs text-muted-foreground mt-1">Unique phone numbers from repair bookings</p>
             </div>
             <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
               <Users className="h-6 w-6 text-green-600" />
@@ -89,11 +92,11 @@ const AdminDashboard = () => {
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Total Orders</p>
+              <p className="text-sm font-medium text-muted-foreground">Repair bookings</p>
               <h3 className="text-2xl font-bold mt-2">
                 {statsLoading ? '…' : stats.totalOrders.toLocaleString()}
               </h3>
-              <p className="text-xs text-muted-foreground mt-1">All time</p>
+              <p className="text-xs text-muted-foreground mt-1">All time (repair_orders)</p>
             </div>
             <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
               <ShoppingCart className="h-6 w-6 text-purple-600" />

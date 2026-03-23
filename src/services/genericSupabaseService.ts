@@ -17,6 +17,16 @@ export interface ResourceColumn {
     type: 'text' | 'image' | 'boolean' | 'date';
 }
 
+function cleanPayload(item: Record<string, unknown>, options?: { forInsert?: boolean }) {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(item)) {
+        if (v === undefined) continue;
+        if (options?.forInsert && (k === 'id' || k === 'created_at' || k === 'updated_at')) continue;
+        out[k] = v;
+    }
+    return out;
+}
+
 export const GenericSupabaseService = {
     async getAll(table: string) {
         const ordered = await supabase.from(table).select('*').order('created_at', { ascending: false });
@@ -27,8 +37,7 @@ export const GenericSupabaseService = {
     },
 
     async create(table: string, item: Record<string, unknown>) {
-        const payload = { ...item };
-        delete payload.id;
+        const payload = cleanPayload(item, { forInsert: true });
         const { data, error } = await supabase
             .from(table)
             .insert([payload])
@@ -40,8 +49,7 @@ export const GenericSupabaseService = {
     },
 
     async update(table: string, id: string, updates: Record<string, unknown>) {
-        const payload = { ...updates };
-        delete payload.id;
+        const payload = cleanPayload(updates);
         const { error } = await supabase.from(table).update(payload).eq('id', id);
 
         if (error) throw error;

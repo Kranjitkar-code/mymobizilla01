@@ -2,7 +2,7 @@ export type Database = {
   public: {
     Tables: {
       buyback_models: {
-        Row: { id: string; brand: string; model: string; base_price: number };
+        Row: { id: string; brand: string; model: string; base_price_npr: number };
       };
       buyback_quotes: {
         Row: {
@@ -69,20 +69,74 @@ export type Database = {
           customer_email: string;
           customer_phone: string;
           description: string | null;
-          status: "pending" | "in_progress" | "completed" | "cancelled";
+          status: "pending" | "in_progress" | "ready" | "completed" | "cancelled";
           tracking_code: string;
           estimated_cost: number;
           created_at: string;
           updated_at: string;
+          vat_amount_npr?: number | null;
+          city?: string | null;
+          customer_source?: string | null;
+          admin_notes?: string | null;
+          technician_name?: string | null;
+          service_type?: string | null;
         };
         Insert: Omit<Database["public"]["Tables"]["repair_orders"]["Row"], "id" | "created_at" | "updated_at">;
         Update: Partial<Database["public"]["Tables"]["repair_orders"]["Insert"]>;
+      };
+      blogs: {
+        Row: {
+          id: string;
+          title: string;
+          excerpt: string | null;
+          content: string | null;
+          cover_url: string | null;
+          published: boolean;
+          created_at: string;
+        };
+      };
+      brands: {
+        Row: {
+          id: string;
+          name: string;
+          slug: string | null;
+          sort_order: number | null;
+          created_at: string;
+        };
+      };
+      training_courses: {
+        Row: Record<string, unknown>;
+      };
+      training_videos: {
+        Row: Record<string, unknown>;
+      };
+      orders: {
+        Row: Record<string, unknown>;
+      };
+      order_items: {
+        Row: Record<string, unknown>;
+      };
+      contact_messages: {
+        Row: {
+          id: string;
+          name: string | null;
+          email: string | null;
+          phone: string | null;
+          interest: string | null;
+          message: string;
+          status: string | null;
+          admin_reply: string | null;
+          replied_at: string | null;
+          created_at: string | null;
+        };
       };
       phone_models: {
         Row: {
           id: string;
           brand: string;
           model: string;
+          series: string | null;
+          description: string | null;
           image_url: string | null;
           base_price: number | null;
           created_at: string | null;
@@ -100,19 +154,15 @@ export type Database = {
       website_content: {
         Row: {
           id: string;
-          title: string | null;
-          content: string | null;
-          type: 'text' | 'image' | 'html' | null;
-          section: 'home' | 'services' | 'about' | 'contact' | 'settings' | 'footer' | null;
-          created_at: string | null;
+          section: string;
+          content: Record<string, unknown>;
           updated_at: string | null;
         };
         Insert: {
-          id: string;
-          title?: string | null;
-          content?: string | null;
-          type?: 'text' | 'image' | 'html' | null;
-          section?: 'home' | 'services' | 'about' | 'contact' | 'settings' | 'footer' | null;
+          id?: string;
+          section: string;
+          content?: Record<string, unknown>;
+          updated_at?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["website_content"]["Insert"]>;
       };

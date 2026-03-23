@@ -13,7 +13,7 @@ create table if not exists public.settings (
 -- Orders
 create table if not exists public.orders (
   id uuid primary key default gen_random_uuid(),
-  public_code text not null unique default encode(gen_random_bytes(6), 'hex'),
+  public_code text not null unique default substring(md5(random()::text || clock_timestamp()::text) from 1 for 12),
   name text,
   email text,
   phone text,
@@ -48,12 +48,13 @@ alter table public.settings enable row level security;
 alter table public.orders enable row level security;
 alter table public.order_items enable row level security;
 
--- Public can read settings
-create policy if not exists "settings_public_read" on public.settings for select using (true);
+drop policy if exists "settings_public_read" on public.settings;
+create policy "settings_public_read" on public.settings for select using (true);
 
--- Anonymous can insert orders and order items
-create policy if not exists "orders_insert_anyone" on public.orders for insert with check (true);
-create policy if not exists "order_items_insert_anyone" on public.order_items for insert with check (true);
+drop policy if exists "orders_insert_anyone" on public.orders;
+create policy "orders_insert_anyone" on public.orders for insert with check (true);
+drop policy if exists "order_items_insert_anyone" on public.order_items;
+create policy "order_items_insert_anyone" on public.order_items for insert with check (true);
 
 -- Seed a default settings row if none exists
 insert into public.settings (id)

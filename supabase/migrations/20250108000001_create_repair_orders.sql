@@ -1,5 +1,5 @@
--- Create repair_orders table
-CREATE TABLE repair_orders (
+-- Create repair_orders table (idempotent: safe if table already exists on remote)
+CREATE TABLE IF NOT EXISTS public.repair_orders (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   device_category TEXT NOT NULL,
   brand TEXT NOT NULL,
@@ -16,38 +16,33 @@ CREATE TABLE repair_orders (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create index for tracking code lookups
-CREATE INDEX idx_repair_orders_tracking_code ON repair_orders(tracking_code);
+CREATE INDEX IF NOT EXISTS idx_repair_orders_tracking_code ON public.repair_orders(tracking_code);
+CREATE INDEX IF NOT EXISTS idx_repair_orders_status ON public.repair_orders(status);
 
--- Create index for status filtering
-CREATE INDEX idx_repair_orders_status ON repair_orders(status);
-
--- Create function to update updated_at timestamp
-CREATE OR REPLACE FUNCTION update_updated_at_column()
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
+  NEW.updated_at = NOW();
+  RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$ LANGUAGE plpgsql;
 
--- Create trigger to automatically update updated_at
-CREATE TRIGGER update_repair_orders_updated_at 
-  BEFORE UPDATE ON repair_orders 
-  FOR EACH ROW 
-  EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS update_repair_orders_updated_at ON public.repair_orders;
+CREATE TRIGGER update_repair_orders_updated_at
+  BEFORE UPDATE ON public.repair_orders
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at_column();
 
--- Enable Row Level Security (RLS)
-ALTER TABLE repair_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.repair_orders ENABLE ROW LEVEL SECURITY;
 
--- Create policy to allow public read access for tracking
-CREATE POLICY "Allow public read access for tracking" ON repair_orders
+DROP POLICY IF EXISTS "Allow public read access for tracking" ON public.repair_orders;
+CREATE POLICY "Allow public read access for tracking" ON public.repair_orders
   FOR SELECT USING (true);
 
--- Create policy to allow public insert for new orders
-CREATE POLICY "Allow public insert" ON repair_orders
+DROP POLICY IF EXISTS "Allow public insert" ON public.repair_orders;
+CREATE POLICY "Allow public insert" ON public.repair_orders
   FOR INSERT WITH CHECK (true);
 
--- Create policy to allow public update (for status updates by admins)
-CREATE POLICY "Allow public update" ON repair_orders
+DROP POLICY IF EXISTS "Allow public update" ON public.repair_orders;
+CREATE POLICY "Allow public update" ON public.repair_orders
   FOR UPDATE USING (true);

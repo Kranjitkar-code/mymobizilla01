@@ -23,9 +23,12 @@ create table if not exists public.discount_codes (
 alter table public.product_reviews enable row level security;
 alter table public.discount_codes enable row level security;
 
-create policy if not exists "reviews_public_read" on public.product_reviews for select using (true);
-create policy if not exists "reviews_insert_anyone" on public.product_reviews for insert with check (true);
-create policy if not exists "discount_codes_public_read" on public.discount_codes for select using (is_active);
+drop policy if exists "reviews_public_read" on public.product_reviews;
+create policy "reviews_public_read" on public.product_reviews for select using (true);
+drop policy if exists "reviews_insert_anyone" on public.product_reviews;
+create policy "reviews_insert_anyone" on public.product_reviews for insert with check (true);
+drop policy if exists "discount_codes_public_read" on public.discount_codes;
+create policy "discount_codes_public_read" on public.discount_codes for select using (is_active);
 
 -- Extend bookings with customer_type
 alter table public.bookings add column if not exists customer_type text default 'b2c';

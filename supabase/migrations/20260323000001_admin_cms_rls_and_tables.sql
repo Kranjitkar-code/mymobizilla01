@@ -12,18 +12,7 @@ CREATE TABLE IF NOT EXISTS public.website_content (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS public.contact_messages (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  name text,
-  email text,
-  phone text,
-  interest text,
-  message text,
-  status text DEFAULT 'unread',
-  admin_reply text,
-  replied_at timestamptz,
-  created_at timestamptz DEFAULT now()
-);
+-- contact_messages: created in bootstrap migration; extended in 20260322000001_contact_messages_extend.sql
 
 CREATE TABLE IF NOT EXISTS public.banners (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -134,7 +123,7 @@ DECLARE
   tbl text;
   public_tables text[] := ARRAY[
     'banners','faqs','services','team_members','testimonials',
-    'why_choose_us','video_lists','blogs','brands',
+    'why_choose_us','video_lists','brands',
     'phone_models','training_courses','training_videos','website_content'
   ];
 BEGIN
@@ -149,22 +138,36 @@ BEGIN
   END LOOP;
 END $$;
 
--- Orders: repair/buyback bookings — public insert + read for tracking; authenticated full access for admin
+-- Public blog list: only published posts (drafts hidden). Admins use auth_full_blogs from loop above.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'blogs') THEN
+    EXECUTE 'DROP POLICY IF EXISTS "public_read_blogs" ON public.blogs';
+    EXECUTE 'DROP POLICY IF EXISTS "blogs_public_read_published" ON public.blogs';
+    EXECUTE 'CREATE POLICY "blogs_public_read_published" ON public.blogs FOR SELECT USING (published = true)';
+  END IF;
+END $$;
+
+-- Orders: anonymous checkout insert only; no public listing (PII). Authenticated = admin dashboard.
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'orders') THEN
     ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
+    DROP POLICY IF EXISTS "orders_public_select" ON public.orders;
+    DROP POLICY IF EXISTS "orders_public_insert" ON public.orders;
+    DROP POLICY IF EXISTS "orders_insert_anyone" ON public.orders;
+    CREATE POLICY "orders_insert_anyone" ON public.orders FOR INSERT WITH CHECK (true);
+    DROP POLICY IF EXISTS "orders_authenticated_all" ON public.orders;
+    CREATE POLICY "orders_authenticated_all" ON public.orders FOR ALL TO authenticated USING (true) WITH CHECK (true);
   END IF;
 END $$;
-DO $$ BEGIN
-  CREATE POLICY "orders_public_select" ON public.orders FOR SELECT USING (true);
-EXCEPTION WHEN OTHERS THEN NULL;
-END $$;
-DO $$ BEGIN
-  CREATE POLICY "orders_public_insert" ON public.orders FOR INSERT WITH CHECK (true);
-EXCEPTION WHEN OTHERS THEN NULL;
-END $$;
-DO $$ BEGIN
-  CREATE POLICY "orders_authenticated_all" ON public.orders FOR ALL TO authenticated USING (true) WITH CHECK (true);
-EXCEPTION WHEN OTHERS THEN NULL;
+
+-- Order line items: same pattern as orders (insert at checkout; admin reads via authenticated)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'order_items') THEN
+    ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
+    DROP POLICY IF EXISTS "order_items_authenticated_all" ON public.order_items;
+    CREATE POLICY "order_items_authenticated_all" ON public.order_items FOR ALL TO authenticated USING (true) WITH CHECK (true);
+  END IF;
 END $$;

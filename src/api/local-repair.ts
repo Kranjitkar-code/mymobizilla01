@@ -26,7 +26,7 @@ export interface RepairOrder {
   customer_email: string;
   customer_phone: string;
   description?: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'pending' | 'in_progress' | 'ready' | 'completed' | 'cancelled';
   tracking_code: string;
   estimated_cost: number;
   created_at: string;

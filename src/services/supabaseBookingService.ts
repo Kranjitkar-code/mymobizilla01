@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { RepairFormData } from '@/api/local-repair';
 
-const TABLE = 'orders';
+const TABLE = 'repair_orders';
 
 export interface BookingResult {
   success: boolean;
@@ -29,17 +29,35 @@ export interface BookingRecord {
   created_at: string;
 }
 
+function rowToBookingRecord(row: Record<string, unknown>): BookingRecord {
+  return {
+    id: String(row.id),
+    customer_name: String(row.customer_name ?? ''),
+    customer_email: String(row.customer_email ?? ''),
+    customer_phone: String(row.customer_phone ?? ''),
+    customer_address: (row.city as string | null | undefined) ?? null,
+    device_brand: String(row.brand ?? ''),
+    device_model: String(row.model ?? ''),
+    service_type: String(row.service_type ?? 'repair'),
+    issues: String(row.issue ?? ''),
+    additional_details: row.description != null ? String(row.description) : null,
+    status: String(row.status ?? 'pending'),
+    booking_ref: String(row.tracking_code ?? ''),
+    created_at: String(row.created_at ?? ''),
+  };
+}
+
 export const SupabaseBookingService = {
   async getBookingByRef(ref: string): Promise<BookingRecord | null> {
     try {
       const { data, error } = await supabase
         .from(TABLE)
         .select('*')
-        .ilike('booking_ref', ref.trim())
+        .ilike('tracking_code', ref.trim())
         .limit(1)
         .maybeSingle();
 
-      if (!error && data) return data as BookingRecord;
+      if (!error && data) return rowToBookingRecord(data as Record<string, unknown>);
     } catch { /* fall through */ }
     return null;
   },
@@ -54,7 +72,9 @@ export const SupabaseBookingService = {
         .or(`customer_phone.ilike.%${cleaned}%,customer_phone.ilike.%${phone.trim()}%`)
         .order('created_at', { ascending: false });
 
-      if (!error && data && data.length > 0) return data as BookingRecord[];
+      if (!error && data && data.length > 0) {
+        return (data as Record<string, unknown>[]).map(rowToBookingRecord);
+      }
     } catch { /* fall through */ }
     return [];
   },
@@ -68,23 +88,23 @@ export const SupabaseBookingService = {
 
     try {
       const { error } = await supabase.from(TABLE).insert({
+        device_category: data.device_category || 'other',
+        brand: data.brand,
+        model: data.model,
+        issue: data.issue,
         customer_name: data.customer_name,
         customer_email: data.customer_email,
         customer_phone: data.customer_phone,
-        customer_address: null,
-        device_brand: data.brand,
-        device_model: data.model,
-        service_type: serviceType,
-        issues: data.issue,
-        additional_details: data.description ?? null,
+        description: data.description ?? null,
+        tracking_code: bookingRef,
+        estimated_cost: 0,
         status: 'pending',
-        booking_ref: bookingRef,
-        created_at: new Date().toISOString(),
+        service_type: serviceType,
       });
 
       if (error) {
         if (error.code === '42P01') {
-          console.warn('orders table does not exist yet.');
+          console.warn('repair_orders table does not exist yet.');
           return { success: false, error: 'Table not found' };
         }
         throw error;

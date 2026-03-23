@@ -200,11 +200,20 @@ const ModelsPage = () => {
             setNewModelImage(null);
             loadData();
         } else {
-            console.error("Add model failed:", result.error);
-            if (result.error?.code === '42P01' || result.error?.message?.includes('relation') || result.error?.message?.includes('does not exist')) {
+            console.error('Add model failed:', result.error);
+            const msg =
+                result.error && typeof result.error === 'object' && 'message' in result.error
+                    ? String((result.error as { message?: string }).message)
+                    : String(result.error);
+            if (
+                (result.error as { code?: string })?.code === '42P01' ||
+                msg.includes('relation') ||
+                msg.includes('does not exist') ||
+                msg.toLowerCase().includes('permission')
+            ) {
                 setShowSchemaHelp(true);
             }
-            toast({ title: "Error", description: "Failed to add model", variant: "destructive" });
+            toast({ title: 'Error', description: msg || 'Failed to add model', variant: 'destructive' });
         }
         setSubmitting(false);
     };
@@ -213,73 +222,50 @@ const ModelsPage = () => {
         if (!confirm(`This will attempt to add ${DEFAULT_MODELS.length} common phone models. This may take a moment. Continue?`)) return;
 
         setLoading(true);
-        let successCount = 0;
-        let skippedCount = 0;
-        let errorCount = 0;
 
-        // Create a map of existing brands for quick lookup (normalized to lowercase)
-        const brandMap = new Map(brands.map(b => [b.name.toLowerCase(), b]));
+        const brandMap = new Map(brands.map((b) => [b.name.toLowerCase(), b]));
+        const brandNamesNeeded = new Set(DEFAULT_MODELS.map((i) => i.brand.toLowerCase()));
 
-        for (const item of DEFAULT_MODELS) {
-            // Check if brand exists
-            const brandExists = brandMap.has(item.brand.toLowerCase());
-
-            if (!brandExists) {
-                // Optionally auto-create brand? For now, let's just skip and warn
-                // Or better, try to create it on the fly?
-                // Let's try to create it if it doesn't exist to be helpful
-                try {
-                    const newBrand = await SupabaseBrandsService.addBrand({ name: item.brand });
-                    if (newBrand.success && newBrand.row) {
-                        brandMap.set(item.brand.toLowerCase(), newBrand.row);
-                    } else {
-                        console.warn(`Could not create brand ${item.brand}, skipping model ${item.model}`);
-                        skippedCount++;
-                        continue;
-                    }
-                } catch (e) {
-                    skippedCount++;
-                    continue;
+        for (const lower of brandNamesNeeded) {
+            if (brandMap.has(lower)) continue;
+            const displayName = DEFAULT_MODELS.find((i) => i.brand.toLowerCase() === lower)?.brand ?? lower;
+            try {
+                const newBrand = await SupabaseBrandsService.addBrand({ name: displayName });
+                if (newBrand.success && newBrand.row) {
+                    brandMap.set(lower, newBrand.row);
                 }
-            }
-
-            // Check if model already exists to avoid duplicates
-            const modelExists = models.some(m =>
-                m.brand.toLowerCase() === item.brand.toLowerCase() &&
-                m.model.toLowerCase() === item.model.toLowerCase()
-            );
-
-            if (modelExists) {
-                skippedCount++;
-                continue;
-            }
-
-            const result = await SupabasePhonesService.addModel({
-                brand: item.brand,
-                model: item.model,
-                series: item.series
-            });
-
-            if (result.success) {
-                successCount++;
-            } else {
-                errorCount++;
-                if (result.error?.code === '42P01') {
-                    setShowSchemaHelp(true);
-                    break; // Stop if table missing
-                }
+            } catch {
+                /* next */
             }
         }
 
-        setLoading(false);
-        loadData(); // Refresh list
+        const latestBrands = await SupabaseBrandsService.getAllBrands();
+        const result = await SupabasePhonesService.bulkSeedPhoneModels(DEFAULT_MODELS, latestBrands, models);
 
-        if (successCount > 0) {
-            toast({ title: "Success", description: `Added ${successCount} models. (${skippedCount} skipped, ${errorCount} failed)` });
-        } else if (errorCount > 0) {
-            toast({ title: "Error", description: "Failed to add models. Check database setup.", variant: "destructive" });
+        setLoading(false);
+        await loadData();
+
+        const detail = result.lastError ? ` ${result.lastError}` : '';
+        if (result.inserted > 0) {
+            toast({
+                title: 'Success',
+                description: `Added ${result.inserted} models (${result.skipped} skipped, ${result.failed} failed).${detail}`,
+            });
+        } else if (result.failed > 0) {
+            toast({
+                title: 'Error',
+                description: `Failed to add models.${detail || ' Sign in with Supabase Auth (admin) and run Database Setup / migrations if needed.'}`,
+                variant: 'destructive',
+            });
+            const err = result.lastError ?? '';
+            if (err.includes('42P01') || err.includes('does not exist') || err.toLowerCase().includes('permission')) {
+                setShowSchemaHelp(true);
+            }
         } else {
-            toast({ title: "Info", description: "No new models added (all skipped or brands missing)." });
+            toast({
+                title: 'Info',
+                description: `No new rows inserted (${result.skipped} skipped — often duplicates or brands not in database).`,
+            });
         }
     };
 
@@ -295,10 +281,13 @@ const ModelsPage = () => {
         }
     };
 
-    const filteredModels = models.filter(m =>
-        m.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.brand.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredModels = models.filter((m) => {
+        const q = searchTerm.toLowerCase();
+        return (
+            (m.model ?? '').toLowerCase().includes(q) ||
+            (m.brand ?? '').toLowerCase().includes(q)
+        );
+    });
 
     return (
         <div className="space-y-6 p-6">
