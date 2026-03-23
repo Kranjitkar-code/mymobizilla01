@@ -4,6 +4,8 @@ export interface ResourceField {
     key: string;
     label: string;
     type: 'text' | 'number' | 'textarea' | 'image' | 'select' | 'boolean';
+    /** Used when type === 'textarea' */
+    textareaRows?: number;
     required?: boolean;
     options?: { label: string; value: string }[]; // For select
     bucketName?: string; // For image upload
@@ -17,19 +19,19 @@ export interface ResourceColumn {
 
 export const GenericSupabaseService = {
     async getAll(table: string) {
-        const { data, error } = await supabase
-            .from(table)
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        return data || [];
+        const ordered = await supabase.from(table).select('*').order('created_at', { ascending: false });
+        if (!ordered.error) return ordered.data || [];
+        const fallback = await supabase.from(table).select('*');
+        if (fallback.error) throw fallback.error;
+        return fallback.data || [];
     },
 
-    async create(table: string, item: any) {
+    async create(table: string, item: Record<string, unknown>) {
+        const payload = { ...item };
+        delete payload.id;
         const { data, error } = await supabase
             .from(table)
-            .insert([item])
+            .insert([payload])
             .select()
             .single();
 
@@ -37,11 +39,10 @@ export const GenericSupabaseService = {
         return data;
     },
 
-    async update(table: string, id: string, updates: any) {
-        const { error } = await supabase
-            .from(table)
-            .update(updates)
-            .eq('id', id);
+    async update(table: string, id: string, updates: Record<string, unknown>) {
+        const payload = { ...updates };
+        delete payload.id;
+        const { error } = await supabase.from(table).update(payload).eq('id', id);
 
         if (error) throw error;
         return true;

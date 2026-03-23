@@ -14,6 +14,8 @@ export interface OrderRow {
   status: string;
   booking_ref: string;
   created_at: string;
+  admin_notes?: string | null;
+  technician_name?: string | null;
 }
 
 export const SupabaseOrdersService = {
@@ -43,6 +45,14 @@ export const SupabaseOrdersService = {
 
     if (error) throw error;
     return true;
+  },
+
+  async updateOrderFields(
+    id: string,
+    fields: Partial<Pick<OrderRow, 'status' | 'admin_notes' | 'technician_name'>>,
+  ): Promise<void> {
+    const { error } = await supabase.from('orders').update(fields).eq('id', id);
+    if (error) throw error;
   },
 
   async getOrderByRef(bookingRef: string): Promise<OrderRow | null> {

@@ -7,7 +7,7 @@ const VideosPage = () => {
             title="Our Video Lists"
             entityLabel="Video"
             entityLabelPlural="Videos"
-            tableName="videos"
+            tableName="video_lists"
             searchKey="title"
             columns={[
                 { key: 'thumbnail_url', label: 'Thumbnail', type: 'image' },

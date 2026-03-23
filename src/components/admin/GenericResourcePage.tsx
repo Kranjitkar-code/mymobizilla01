@@ -51,6 +51,8 @@ export interface GenericResourcePageProps {
     addButtonLabel?: string;
     modalAddTitle?: string;
     modalEditTitle?: string;
+    /** Tailwind max-width classes, e.g. sm:max-w-2xl */
+    dialogContentClassName?: string;
 }
 
 const GenericResourcePage: React.FC<GenericResourcePageProps> = ({
@@ -72,6 +74,7 @@ const GenericResourcePage: React.FC<GenericResourcePageProps> = ({
     addButtonLabel: addButtonLabelProp,
     modalAddTitle: modalAddTitleProp,
     modalEditTitle: modalEditTitleProp,
+    dialogContentClassName = 'sm:max-w-lg',
 }) => {
     const [items, setItems] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -191,14 +194,15 @@ const GenericResourcePage: React.FC<GenericResourcePageProps> = ({
             }
             setIsDialogOpen(false);
             loadItems();
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const err = error as { code?: string; message?: string };
             console.error('Submit failed', error);
-            if (error?.code === '42P01' || error?.message?.includes('relation') || error?.message?.includes('does not exist')) {
+            if (err?.code === '42P01' || err?.message?.includes('relation') || err?.message?.includes('does not exist')) {
                 setShowSchemaHelp(true);
             }
             toast({
                 title: 'Error',
-                description: 'Operation failed. Database setup may be required.',
+                description: err?.message || 'Operation failed. Database setup may be required.',
                 variant: 'destructive',
             });
         } finally {
@@ -212,9 +216,10 @@ const GenericResourcePage: React.FC<GenericResourcePageProps> = ({
             await GenericSupabaseService.delete(tableName, id);
             toast({ title: 'Deleted', description: 'The row was removed.' });
             loadItems();
-        } catch (error) {
+        } catch (error: unknown) {
+            const err = error as { message?: string };
             console.error('Delete failed', error);
-            toast({ title: 'Error', description: 'Delete failed', variant: 'destructive' });
+            toast({ title: 'Error', description: err?.message || 'Delete failed', variant: 'destructive' });
         }
     };
 
@@ -314,7 +319,7 @@ const GenericResourcePage: React.FC<GenericResourcePageProps> = ({
             </AdminCrudSectionCard>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="gap-0 sm:max-w-lg">
+                <DialogContent className={`gap-0 ${dialogContentClassName}`}>
                     <DialogHeader className="space-y-1 pb-2">
                         <DialogTitle className="text-xl font-semibold tracking-tight">{dialogTitle}</DialogTitle>
                     </DialogHeader>
@@ -338,6 +343,7 @@ const GenericResourcePage: React.FC<GenericResourcePageProps> = ({
                                     )}
                                     {field.type === 'textarea' && (
                                         <Textarea
+                                            rows={field.textareaRows ?? 4}
                                             value={formData[field.key] ?? ''}
                                             onChange={(e) => handleInputChange(field.key, e.target.value)}
                                         />

@@ -11,66 +11,16 @@ import { SchemaHelpDialog } from "../SchemaHelpDialog";
 import { AdminCrudPage, AdminCrudToolbar, AdminCrudEmptyPanel } from '@/components/admin/crud/AdminCrudShell';
 
 const DEFAULT_FAQS = [
-    {
-        question: "What products do you sell?",
-        answer: "We offer a wide range of mobile phones, phone accessories, and replacement parts (screens, batteries, charging ports, etc.). You can browse our products by category or search for specific items."
-    },
-    {
-        question: "Do you provide repair services?",
-        answer: "Yes, we offer repair services for various mobile phone issues such as screen replacements, battery issues, charging problems, and more. Visit our \"Repair Services\" page for more details and to book a repair or directly visit our physical outlet."
-    },
-    {
-        question: "How do I schedule a repair?",
-        answer: "You can schedule a repair directly through our website by selecting your phone model and describing the issue. You will then be provided with repair options, pricing, and the next available appointment."
-    },
-    {
-        question: "How long will it take to repair my phone?",
-        answer: "Repair times vary based on the type of service. Most repairs are completed within 1-2 hours, but more complex issues may take longer. You’ll be notified once your repair is complete."
-    },
-    {
-        question: "What types of phone parts do you sell?",
-        answer: "We sell a wide variety of phone parts, including screens, batteries, charging ports, cameras, buttons, back covers, and more. You can find all parts listed on our website under the \"Phone Parts\" section."
-    },
-    {
-        question: "Are the parts genuine?",
-        answer: "Yes, we only sell high-quality, genuine parts sourced directly from manufacturers or trusted suppliers. We guarantee the authenticity of all the parts we sell."
-    },
-    {
-        question: "Do you offer warranties on repairs and parts?",
-        answer: "Yes, we offer a warranty on both repairs and parts. Warranty periods vary depending on the type of service or part purchased. Please refer to our Warranty Policy for specific details."
-    },
-    {
-        question: "How can I check the status of my repair?",
-        answer: "After you schedule your repair, you will receive regular updates on the status of your repair through email or SMS. You can also log into your account to view the status."
-    },
-    {
-        question: "Can I repair my phone myself using parts purchased from your site?",
-        answer: "While we do offer high-quality replacement parts, we recommend that you let our professionals handle repairs. Self-repair can void your warranty or potentially cause further damage if not done correctly."
-    },
-    {
-        question: "What payment methods do you accept?",
-        answer: "We accept cash and online payment methods."
-    },
-    {
-        question: "Can I return phone parts or accessories?",
-        answer: "Yes, we offer a return policy for phone parts and accessories within 30 days of purchase, provided they are unused and in their original packaging. Please refer to our Return Policy for more details."
-    },
-    {
-        question: "Do you offer trade-ins or phone buyback programs?",
-        answer: "Yes, we offer trade-in programs where you can exchange your old phone for store credit or a cash refund. Visit our exchange section for more information and to get an estimated value for your device."
-    },
-    {
-        question: "Do you offer international shipping?",
-        answer: "Yes, we ship internationally as well. Shipping fees and delivery times vary based on your location. Check our Shipping Policy for more information."
-    },
-    {
-        question: "What happens if my phone is beyond repair?",
-        answer: "If your phone is deemed irreparable, we will notify you and discuss possible options, such as a discounted replacement or repair parts for your device."
-    },
-    {
-        question: "How can I contact customer support?",
-        answer: "You can reach our customer support team through live chat on our website, by email, or by phone. Visit our \"Contact Us\" page for more details."
-    }
+    { question: 'How long does a screen repair take?', answer: 'Most screen repairs are completed within 1-2 hours.' },
+    { question: 'Do you use original parts?', answer: 'We offer both original and high-quality aftermarket parts. We will discuss options with you before starting any repair.' },
+    { question: 'Is there a warranty on repairs?', answer: 'Yes, all repairs come with a 30-day warranty covering parts and labor.' },
+    { question: 'How do I get a repair quote?', answer: 'Use our online repair quote tool or bring your device to our shop at Ratna Plaza, New Road, Kathmandu.' },
+    { question: 'What phone brands do you repair?', answer: 'We repair all major brands: iPhone, Samsung, OnePlus, Xiaomi, Oppo, Vivo, Realme, and more.' },
+    { question: 'Can you fix water-damaged phones?', answer: 'Yes, we offer water damage repair services. Success depends on the extent of damage. Bring it in as soon as possible.' },
+    { question: 'How does the buyback program work?', answer: 'Submit your device details online, our team will contact you with a fair price offer, and payment is made on the spot.' },
+    { question: 'Where are you located?', answer: 'We are located at Ratna Plaza, New Road, Kathmandu 44600, Nepal. Open until 7 PM.' },
+    { question: 'What payment methods do you accept?', answer: 'We accept cash, eSewa, Khalti, and bank transfers.' },
+    { question: 'Do you offer training courses?', answer: 'Yes! Mobizilla Academy offers Basic to Advanced mobile repair training. Contact us for enrollment.' }
 ];
 
 const FaqPage = () => {
@@ -109,11 +59,14 @@ const FaqPage = () => {
             setIsAdding(false);
             loadFaqs();
         } else {
-            console.error("Add FAQ failed:", result.error);
             if (result.error?.code === '42P01' || result.error?.message?.includes('relation') || result.error?.message?.includes('does not exist')) {
                 setShowSchemaHelp(true);
             }
-            toast({ title: "Error", description: "Failed to add FAQ", variant: "destructive" });
+            toast({
+                title: "Error",
+                description: result.error?.message || "Failed to add FAQ",
+                variant: "destructive",
+            });
         }
     };
 
@@ -125,7 +78,11 @@ const FaqPage = () => {
             toast({ title: "Success", description: "FAQ deleted" });
             loadFaqs();
         } else {
-            toast({ title: "Error", description: "Failed to delete FAQ", variant: "destructive" });
+            toast({
+                title: "Error",
+                description: result.error?.message || "Failed to delete FAQ",
+                variant: "destructive",
+            });
         }
     };
 

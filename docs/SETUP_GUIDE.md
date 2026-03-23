@@ -42,8 +42,8 @@ git -v
 
 ```powershell
 cd c:\Users\mobiz\mymobizilla
-git clone <your-repo-url> snaptechfix-main
-cd snaptechfix-main
+git clone <your-repo-url> mymobizilla
+cd mymobizilla
 ```
 
 ### 2. Install dependencies
@@ -152,7 +152,7 @@ npm run preview
 ## Project Structure
 
 ```
-snaptechfix-main/
+mymobizilla/
 ├── src/                    # React frontend
 │   ├── components/         # UI components
 │   ├── pages/              # Route pages

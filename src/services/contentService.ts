@@ -30,144 +30,193 @@ export interface EditableContent {
   servicesDescription: string;
 }
 
-// Collection names
 const CONTENT_TABLE = 'website_content';
 const SETTINGS_TABLE = 'website_settings';
 const EDITABLE_CONTENT_TABLE = 'editable_content';
 
-/**
- * Firestore Content Service
- * Handles all content CRUD operations with Firestore
- */
+type CmsSection = 'hero' | 'about' | 'contact' | 'services';
+
+/** Legacy ids used by Home / ContentContext map to jsonb keys under each `section` row. */
+const LEGACY_KEYS: Record<
+  string,
+  { section: CmsSection; jsonKey: string; type: ContentItem['type']; sectionUi: ContentItem['section'] }
+> = {
+  'home-hero-title': { section: 'hero', jsonKey: 'title', type: 'text', sectionUi: 'home' },
+  'home-hero-subtitle': { section: 'hero', jsonKey: 'subtitle', type: 'text', sectionUi: 'home' },
+  'about-us-content': { section: 'about', jsonKey: 'html', type: 'html', sectionUi: 'about' },
+  'contact-phone': { section: 'contact', jsonKey: 'phone', type: 'text', sectionUi: 'contact' },
+  'contact-email': { section: 'contact', jsonKey: 'email', type: 'text', sectionUi: 'contact' },
+  'contact-address': { section: 'contact', jsonKey: 'address', type: 'text', sectionUi: 'contact' },
+  'services-description': { section: 'services', jsonKey: 'description', type: 'text', sectionUi: 'services' },
+};
+
+export interface WebsiteContentFormState {
+  heroTitle: string;
+  heroSubtitle: string;
+  aboutUs: string;
+  contactPhone: string;
+  contactEmail: string;
+  contactAddress: string;
+  servicesDescription: string;
+}
+
+/** Supabase-backed website copy: one row per `section`, JSON in `content`. */
 export class ContentService {
-  
-  /**
-   * Get all content items from Firestore
-   */
-  static async getAllContent(): Promise<ContentItem[]> {
-    try {
-      const { data, error } = await supabase
-        .from(CONTENT_TABLE)
-        .select('*')
-        .order('updated_at', { ascending: false });
-
-      if (error) throw error;
-
-      return (data || []).map(row => ({
-        id: row.id,
-        title: row.title || row.id,
-        content: row.content || '',
-        type: (row.type as ContentItem['type']) || 'text',
-        section: (row.section as ContentItem['section']) || 'home',
-        lastModified: row.updated_at || row.created_at || new Date().toISOString()
-      }));
-    } catch (error) {
-      console.error('Error fetching content from Supabase:', error);
-      throw error;
-    }
+  private static async fetchCmsRows(): Promise<
+    { section: string; content: Record<string, unknown>; updated_at: string | null }[]
+  > {
+    const { data, error } = await supabase.from(CONTENT_TABLE).select('section, content, updated_at');
+    if (error) throw error;
+    return (data || []).map((row: { section: string; content: unknown; updated_at: string | null }) => ({
+      section: row.section,
+      content: (row.content && typeof row.content === 'object' ? row.content : {}) as Record<string, unknown>,
+      updated_at: row.updated_at ?? null,
+    }));
   }
 
-  /**
-   * Get a specific content item by ID
-   */
-  static async getContentById(id: string): Promise<ContentItem | null> {
+  private static sectionMap(
+    rows: Awaited<ReturnType<typeof ContentService.fetchCmsRows>>,
+  ): Record<string, Record<string, unknown>> {
+    const m: Record<string, Record<string, unknown>> = {};
+    for (const r of rows) {
+      m[r.section] = r.content || {};
+    }
+    return m;
+  }
+
+  static loadWebsiteContentFormDefaults(): WebsiteContentFormState {
+    return {
+      heroTitle: 'Your One-Stop Solution for Mobile Repairs & Buyback',
+      heroSubtitle: 'Expert technicians, genuine parts, and hassle-free service for all your device needs.',
+      aboutUs: `<h2>About Mobizilla</h2>
+<p>Mobizilla is your trusted partner for all device repair needs.</p>`,
+      contactPhone: '+977-1-5354999',
+      contactEmail: 'mobizillanepal@gmail.com',
+      contactAddress: 'Ratna Plaza, New Road, Kathmandu 44600, Nepal',
+      servicesDescription:
+        'From professional repairs to technical training, we provide comprehensive solutions for all your mobile device needs with expert care and quality guarantee.',
+    };
+  }
+
+  static async loadWebsiteContentForm(): Promise<WebsiteContentFormState> {
+    const def = ContentService.loadWebsiteContentFormDefaults();
     try {
-      const { data, error } = await supabase
-        .from(CONTENT_TABLE)
-        .select('*')
-        .eq('id', id)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!data) return null;
-
+      const rows = await ContentService.fetchCmsRows();
+      const sm = ContentService.sectionMap(rows);
+      const hero = sm.hero || {};
+      const about = sm.about || {};
+      const contact = sm.contact || {};
+      const services = sm.services || {};
       return {
-        id: data.id,
-        title: data.title || data.id,
-        content: data.content || '',
-        type: (data.type as ContentItem['type']) || 'text',
-        section: (data.section as ContentItem['section']) || 'home',
-        lastModified: data.updated_at || data.created_at || new Date().toISOString()
+        heroTitle: String(hero.title ?? def.heroTitle),
+        heroSubtitle: String(hero.subtitle ?? def.heroSubtitle),
+        aboutUs: String(about.html ?? def.aboutUs),
+        contactPhone: String(contact.phone ?? def.contactPhone),
+        contactEmail: String(contact.email ?? def.contactEmail),
+        contactAddress: String(contact.address ?? def.contactAddress),
+        servicesDescription: String(services.description ?? def.servicesDescription),
       };
-    } catch (error) {
-      console.error('Error fetching content by ID from Supabase:', error);
-      throw error;
+    } catch {
+      return def;
     }
   }
 
-  /**
-   * Get content by section
-   */
+  static async saveWebsiteContentForm(state: WebsiteContentFormState): Promise<void> {
+    const now = new Date().toISOString();
+    const { error } = await supabase.from(CONTENT_TABLE).upsert(
+      [
+        { section: 'hero', content: { title: state.heroTitle, subtitle: state.heroSubtitle }, updated_at: now },
+        { section: 'about', content: { html: state.aboutUs }, updated_at: now },
+        {
+          section: 'contact',
+          content: { phone: state.contactPhone, email: state.contactEmail, address: state.contactAddress },
+          updated_at: now,
+        },
+        { section: 'services', content: { description: state.servicesDescription }, updated_at: now },
+      ],
+      { onConflict: 'section' },
+    );
+    if (error) throw error;
+  }
+
+  static async getAllContent(): Promise<ContentItem[]> {
+    const rows = await ContentService.fetchCmsRows();
+    const sm = ContentService.sectionMap(rows);
+    const ts =
+      rows.reduce((max, r) => {
+        const t = r.updated_at ? new Date(r.updated_at).getTime() : 0;
+        return Math.max(max, t);
+      }, 0) || Date.now();
+    const lastModified = new Date(ts).toISOString();
+
+    return Object.keys(LEGACY_KEYS).map((id) => {
+      const meta = LEGACY_KEYS[id];
+      const raw = sm[meta.section]?.[meta.jsonKey];
+      const content = raw === undefined || raw === null ? '' : String(raw);
+      return {
+        id,
+        title: id,
+        content,
+        type: meta.type,
+        section: meta.sectionUi,
+        lastModified,
+      };
+    });
+  }
+
+  static async getContentById(id: string): Promise<ContentItem | null> {
+    const meta = LEGACY_KEYS[id];
+    if (!meta) return null;
+    const rows = await ContentService.fetchCmsRows();
+    const sm = ContentService.sectionMap(rows);
+    const row = rows.find((r) => r.section === meta.section);
+    const raw = sm[meta.section]?.[meta.jsonKey];
+    const content = raw === undefined || raw === null ? '' : String(raw);
+    return {
+      id,
+      title: id,
+      content,
+      type: meta.type,
+      section: meta.sectionUi,
+      lastModified: row?.updated_at || new Date().toISOString(),
+    };
+  }
+
   static async getContentBySection(section: string): Promise<ContentItem[]> {
-    try {
-      const { data, error } = await supabase
-        .from(CONTENT_TABLE)
-        .select('*')
-        .eq('section', section)
-        .order('updated_at', { ascending: false });
-
-      if (error) throw error;
-
-      return (data || []).map(row => ({
-        id: row.id,
-        title: row.title || row.id,
-        content: row.content || '',
-        type: (row.type as ContentItem['type']) || 'text',
-        section: (row.section as ContentItem['section']) || 'home',
-        lastModified: row.updated_at || row.created_at || new Date().toISOString()
-      }));
-    } catch (error) {
-      console.error('Error fetching content by section from Supabase:', error);
-      throw error;
-    }
+    const all = await ContentService.getAllContent();
+    return all.filter((i) => LEGACY_KEYS[i.id]?.sectionUi === section);
   }
 
-  /**
-   * Create or update a content item
-   */
   static async updateContent(contentItem: Partial<ContentItem> & { id: string }): Promise<void> {
-    try {
-      const { id, ...data } = contentItem;
-
-      const { error } = await supabase
-        .from(CONTENT_TABLE)
-        .upsert({
-          id,
-          title: data.title ?? id,
-          content: data.content ?? '',
-          type: data.type ?? 'text',
-          section: data.section ?? 'home'
-        }, { onConflict: 'id' });
-
-      if (error) throw error;
-      console.log(`✅ Content item '${id}' upserted in Supabase`);
-    } catch (error) {
-      console.error('Error updating content in Supabase:', error);
-      throw error;
+    const meta = LEGACY_KEYS[contentItem.id];
+    if (!meta) {
+      throw new Error(`Unknown website content id: ${contentItem.id}`);
     }
+    const rows = await ContentService.fetchCmsRows();
+    const sm = ContentService.sectionMap(rows);
+    const cur = { ...(sm[meta.section] || {}) };
+    cur[meta.jsonKey] = contentItem.content ?? '';
+    const now = new Date().toISOString();
+    const { error } = await supabase
+      .from(CONTENT_TABLE)
+      .upsert({ section: meta.section, content: cur, updated_at: now }, { onConflict: 'section' });
+    if (error) throw error;
   }
 
-  /**
-   * Delete a content item
-   */
   static async deleteContent(id: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from(CONTENT_TABLE)
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      console.log(`✅ Content item '${id}' deleted from Supabase`);
-    } catch (error) {
-      console.error('Error deleting content from Supabase:', error);
-      throw error;
-    }
+    const meta = LEGACY_KEYS[id];
+    if (!meta) return;
+    const rows = await ContentService.fetchCmsRows();
+    const sm = ContentService.sectionMap(rows);
+    const cur = { ...(sm[meta.section] || {}) };
+    delete cur[meta.jsonKey];
+    const now = new Date().toISOString();
+    const { error } = await supabase
+      .from(CONTENT_TABLE)
+      .upsert({ section: meta.section, content: cur, updated_at: now }, { onConflict: 'section' });
+    if (error) throw error;
   }
 
-  /**
-   * Subscribe to real-time content updates
-   */
   static subscribeToContent(callback: (content: ContentItem[]) => void): () => void {
     try {
       const channel = supabase
@@ -178,8 +227,7 @@ export class ContentService {
         })
         .subscribe();
 
-      // Initial load
-      ContentService.getAllContent().then(callback).catch(err => {
+      ContentService.getAllContent().then(callback).catch((err) => {
         console.error('Initial content load failed:', err);
       });
 
@@ -192,9 +240,6 @@ export class ContentService {
     }
   }
 
-  /**
-   * Get website settings
-   */
   static async getSettings(): Promise<WebsiteSettings> {
     try {
       const { data, error } = await supabase
@@ -211,7 +256,7 @@ export class ContentService {
           contactPhone: data.contact_phone || '+977-1-5354999',
           contactEmail: data.contact_email || 'support@mobizilla.com',
           contactAddress: data.contact_address || 'Ratna Plaza, New Road, Kathmandu 44600, Nepal',
-          lastModified: data.updated_at || data.created_at || new Date().toISOString()
+          lastModified: data.updated_at || data.created_at || new Date().toISOString(),
         };
       }
 
@@ -219,7 +264,7 @@ export class ContentService {
         siteTitle: 'Mobizilla',
         contactPhone: '+977-1-5354999',
         contactEmail: 'support@mobizilla.com',
-        contactAddress: 'Ratna Plaza, New Road, Kathmandu 44600, Nepal'
+        contactAddress: 'Ratna Plaza, New Road, Kathmandu 44600, Nepal',
       };
     } catch (error) {
       console.error('Error fetching settings from Supabase:', error);
@@ -227,18 +272,18 @@ export class ContentService {
     }
   }
 
-  /**
-   * Update website settings
-   */
   static async updateSettings(settings: WebsiteSettings): Promise<void> {
     try {
-      const { error } = await supabase.from(SETTINGS_TABLE).upsert({
-        id: 'site_settings',
-        site_title: settings.siteTitle,
-        contact_phone: settings.contactPhone,
-        contact_email: settings.contactEmail,
-        contact_address: settings.contactAddress
-      }, { onConflict: 'id' });
+      const { error } = await supabase.from(SETTINGS_TABLE).upsert(
+        {
+          id: 'site_settings',
+          site_title: settings.siteTitle,
+          contact_phone: settings.contactPhone,
+          contact_email: settings.contactEmail,
+          contact_address: settings.contactAddress,
+        },
+        { onConflict: 'id' },
+      );
 
       if (error) throw error;
 
@@ -248,38 +293,33 @@ export class ContentService {
           title: 'Contact Phone',
           content: settings.contactPhone,
           type: 'text' as const,
-          section: 'footer' as const
+          section: 'footer' as const,
         },
         {
           id: 'contact-email',
           title: 'Contact Email',
           content: settings.contactEmail,
           type: 'text' as const,
-          section: 'footer' as const
+          section: 'footer' as const,
         },
         {
           id: 'contact-address',
           title: 'Contact Address',
           content: settings.contactAddress,
           type: 'text' as const,
-          section: 'footer' as const
-        }
+          section: 'footer' as const,
+        },
       ];
 
       for (const item of contentUpdates) {
         await ContentService.updateContent(item);
       }
-
-      console.log('✅ Settings and content items updated in Supabase');
     } catch (error) {
       console.error('Error updating settings in Supabase:', error);
       throw error;
     }
   }
 
-  /**
-   * Subscribe to real-time settings updates
-   */
   static subscribeToSettings(callback: (settings: WebsiteSettings) => void): () => void {
     try {
       const channel = supabase
@@ -290,7 +330,7 @@ export class ContentService {
         })
         .subscribe();
 
-      ContentService.getSettings().then(callback).catch(err => {
+      ContentService.getSettings().then(callback).catch((err) => {
         console.error('Initial settings load failed:', err);
       });
 
@@ -303,9 +343,6 @@ export class ContentService {
     }
   }
 
-  /**
-   * Get editable content (used by AdvancedDashboard)
-   */
   static async getEditableContent(): Promise<EditableContent> {
     try {
       const { data, error } = await supabase
@@ -323,8 +360,12 @@ export class ContentService {
           contactPhone: data.contact_phone || '+977 9731852323',
           contactEmail: data.contact_email || 'rayyanbusinessofficial@gmail.com',
           contactAddress: data.contact_address || 'Ratna Plaza, New Road, Kathmandu 44600, Nepal',
-          aboutUs: data.about_us || 'Mobizilla is your trusted partner for all device repair needs. With years of experience and certified technicians, we provide quality service you can rely on.',
-          servicesDescription: data.services_description || 'From professional repairs to technical training, we provide comprehensive solutions for all your mobile device needs with expert care and quality guarantee.'
+          aboutUs:
+            data.about_us ||
+            'Mobizilla is your trusted partner for all device repair needs. With years of experience and certified technicians, we provide quality service you can rely on.',
+          servicesDescription:
+            data.services_description ||
+            'From professional repairs to technical training, we provide comprehensive solutions for all your mobile device needs with expert care and quality guarantee.',
         };
       }
 
@@ -334,8 +375,10 @@ export class ContentService {
         contactPhone: '+977 9731852323',
         contactEmail: 'rayyanbusinessofficial@gmail.com',
         contactAddress: 'Ratna Plaza, New Road, Kathmandu 44600, Nepal',
-        aboutUs: 'Mobizilla is your trusted partner for all device repair needs. With years of experience and certified technicians, we provide quality service you can rely on.',
-        servicesDescription: 'From professional repairs to technical training, we provide comprehensive solutions for all your mobile device needs with expert care and quality guarantee.'
+        aboutUs:
+          'Mobizilla is your trusted partner for all device repair needs. With years of experience and certified technicians, we provide quality service you can rely on.',
+        servicesDescription:
+          'From professional repairs to technical training, we provide comprehensive solutions for all your mobile device needs with expert care and quality guarantee.',
       };
     } catch (error) {
       console.error('Error fetching editable content from Supabase:', error);
@@ -343,33 +386,29 @@ export class ContentService {
     }
   }
 
-  /**
-   * Update editable content
-   */
   static async updateEditableContent(content: EditableContent): Promise<void> {
     try {
-      const { error } = await supabase.from(EDITABLE_CONTENT_TABLE).upsert({
-        id: 'default',
-        hero_title: content.heroTitle,
-        hero_subtitle: content.heroSubtitle,
-        contact_phone: content.contactPhone,
-        contact_email: content.contactEmail,
-        contact_address: content.contactAddress,
-        about_us: content.aboutUs,
-        services_description: content.servicesDescription
-      }, { onConflict: 'id' });
+      const { error } = await supabase.from(EDITABLE_CONTENT_TABLE).upsert(
+        {
+          id: 'default',
+          hero_title: content.heroTitle,
+          hero_subtitle: content.heroSubtitle,
+          contact_phone: content.contactPhone,
+          contact_email: content.contactEmail,
+          contact_address: content.contactAddress,
+          about_us: content.aboutUs,
+          services_description: content.servicesDescription,
+        },
+        { onConflict: 'id' },
+      );
 
       if (error) throw error;
-      console.log('✅ Editable content updated in Supabase');
     } catch (error) {
       console.error('Error updating editable content in Supabase:', error);
       throw error;
     }
   }
 
-  /**
-   * Subscribe to editable content updates
-   */
   static subscribeToEditableContent(callback: (content: EditableContent) => void): () => void {
     try {
       const channel = supabase
@@ -380,7 +419,7 @@ export class ContentService {
         })
         .subscribe();
 
-      ContentService.getEditableContent().then(callback).catch(err => {
+      ContentService.getEditableContent().then(callback).catch((err) => {
         console.error('Initial editable content load failed:', err);
       });
 
@@ -393,30 +432,20 @@ export class ContentService {
     }
   }
 
-  /**
-   * Migrate localStorage data to Firestore (one-time migration utility)
-   */
   static async migrateFromLocalStorage(): Promise<void> {
     try {
-  console.log('🔄 Starting migration from localStorage to Supabase...');
-      
-      // Migrate editable content
       const editableContentStr = localStorage.getItem('editableWebsiteContent');
       if (editableContentStr) {
         const editableContent = JSON.parse(editableContentStr);
         await this.updateEditableContent(editableContent);
-  console.log('✅ Migrated editable content');
       }
-      
-      // Migrate website settings
+
       const settingsStr = localStorage.getItem('websiteSettings');
       if (settingsStr) {
         const settings = JSON.parse(settingsStr);
         await this.updateSettings(settings);
-  console.log('✅ Migrated website settings');
       }
-      
-      // Migrate content items
+
       const contentCacheStr = localStorage.getItem('contentCache');
       if (contentCacheStr) {
         const { data } = JSON.parse(contentCacheStr);
@@ -424,13 +453,10 @@ export class ContentService {
           for (const item of data) {
             await this.updateContent(item);
           }
-          console.log(`✅ Migrated ${data.length} content items`);
         }
       }
-      
-  console.log('🎉 Migration completed successfully!');
     } catch (error) {
-  console.error('❌ Migration failed:', error);
+      console.error('Migration failed:', error);
       throw error;
     }
   }

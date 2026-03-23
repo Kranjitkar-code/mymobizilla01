@@ -62,9 +62,9 @@ export default function BannersPage() {
 
             toast({ title: "Success", description: "Banners saved successfully" });
             await loadContent();
-        } catch (error) {
-            console.error("Error saving banners:", error);
-            toast({ title: "Error", description: "Failed to save banners", variant: "destructive" });
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : "Failed to save banners";
+            toast({ title: "Error", description: msg, variant: "destructive" });
         } finally {
             setIsSaving(false);
         }

@@ -1,6 +1,6 @@
 -- ============================================================
 -- MOBIZILLA NEPAL LOCALIZATION MIGRATION
--- Converts SnapTechFix (India/INR) → Mobizilla Nepal (NPR)
+-- Legacy India/INR schema → Mobizilla Nepal (NPR)
 -- ============================================================
 
 -- Products: rename price column

@@ -8,20 +8,10 @@ import { Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RichTextEditor from "../RichTextEditor";
-import { ContentService } from "@/services/contentService";
-
-interface WebsiteContent {
-    heroTitle: string;
-    heroSubtitle: string;
-    aboutUs: string;
-    contactPhone: string;
-    contactEmail: string;
-    contactAddress: string;
-    servicesDescription: string;
-}
+import { ContentService, type WebsiteContentFormState } from "@/services/contentService";
 
 export default function WebsiteContentPage() {
-    const [content, setContent] = useState<WebsiteContent>({
+    const [content, setContent] = useState<WebsiteContentFormState>({
         heroTitle: "",
         heroSubtitle: "",
         aboutUs: "",
@@ -42,44 +32,14 @@ export default function WebsiteContentPage() {
     const loadContent = async () => {
         setIsLoading(true);
         try {
-            // Try to load from Supabase first
-            const [heroTitle, heroSubtitle, aboutUs, contactPhone, contactEmail, contactAddress, servicesDesc] = await Promise.all([
-                ContentService.getContentById("home-hero-title"),
-                ContentService.getContentById("home-hero-subtitle"),
-                ContentService.getContentById("about-us-content"),
-                ContentService.getContentById("contact-phone"),
-                ContentService.getContentById("contact-email"),
-                ContentService.getContentById("contact-address"),
-                ContentService.getContentById("services-description"),
-            ]);
-
-            setContent({
-                heroTitle: heroTitle?.content || "Your One-Stop Solution for Mobile Repairs & Buyback",
-                heroSubtitle: heroSubtitle?.content || "Expert technicians, genuine parts, and hassle-free service for all your device needs.",
-                aboutUs: aboutUs?.content || `<h2>About Mobizilla</h2>
-<p>Mobizilla is your trusted partner for all device repair needs. With years of experience and certified technicians, we provide quality service you can rely on.</p>
-
-<p>At <strong>Mobizilla</strong>, we believe in transforming the mobile experience for everyone. Since our inception, we've been at the forefront of <em>mobile repair</em>, <em>device refurbishing</em>, and <em>mobile accessory solutions</em>, offering high-quality services at affordable prices.</p>
-
-<h3>Why Choose Mobizilla?</h3>
-
-<ul>
-  <li><strong>Expert Mobile Repair Services</strong><br>Our certified technicians specialize in all major brands, including Apple, Samsung, Xiaomi, Oppo, Vivo, and more.</li>
-  
-  <li><strong>Buy, Sell & Exchange Phones</strong><br>Looking to upgrade your phone or sell your old one? Mobizilla offers honest device evaluations and competitive pricing.</li>
-  
-  <li><strong>Advanced Repair Lab</strong><br>Our lab is fully equipped with dust-free zones, laser machines, CNC glass cutting, and flex bonding tools.</li>
-</ul>`,
-                contactPhone: contactPhone?.content || "+977-1-5354999",
-                contactEmail: contactEmail?.content || "mobizillanepal@gmail.com",
-                contactAddress: contactAddress?.content || "Ratna Plaza, New Road, Kathmandu 44600, Nepal",
-                servicesDescription: servicesDesc?.content || "From professional repairs to technical training, we provide comprehensive solutions for all your mobile device needs with expert care and quality guarantee.",
-            });
-        } catch (error) {
-            console.error("Error loading content:", error);
+            const loaded = await ContentService.loadWebsiteContentForm();
+            setContent(loaded);
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : "Failed to load website content";
+            setContent(ContentService.loadWebsiteContentFormDefaults());
             toast({
                 title: "Error",
-                description: "Failed to load website content",
+                description: msg,
                 variant: "destructive",
             });
         } finally {
@@ -90,75 +50,19 @@ export default function WebsiteContentPage() {
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            // Save to Supabase
-            await Promise.all([
-                ContentService.updateContent({
-                    id: "home-hero-title",
-                    title: "Homepage Hero Title",
-                    content: content.heroTitle,
-                    type: "text",
-                    section: "home",
-                    lastModified: new Date().toISOString(),
-                }),
-                ContentService.updateContent({
-                    id: "home-hero-subtitle",
-                    title: "Homepage Hero Subtitle",
-                    content: content.heroSubtitle,
-                    type: "text",
-                    section: "home",
-                    lastModified: new Date().toISOString(),
-                }),
-                ContentService.updateContent({
-                    id: "about-us-content",
-                    title: "About Us Content",
-                    content: content.aboutUs,
-                    type: "html",
-                    section: "about",
-                    lastModified: new Date().toISOString(),
-                }),
-                ContentService.updateContent({
-                    id: "contact-phone",
-                    title: "Contact Phone",
-                    content: content.contactPhone,
-                    type: "text",
-                    section: "contact",
-                    lastModified: new Date().toISOString(),
-                }),
-                ContentService.updateContent({
-                    id: "contact-email",
-                    title: "Contact Email",
-                    content: content.contactEmail,
-                    type: "text",
-                    section: "contact",
-                    lastModified: new Date().toISOString(),
-                }),
-                ContentService.updateContent({
-                    id: "contact-address",
-                    title: "Contact Address",
-                    content: content.contactAddress,
-                    type: "text",
-                    section: "contact",
-                    lastModified: new Date().toISOString(),
-                }),
-                ContentService.updateContent({
-                    id: "services-description",
-                    title: "Services Description",
-                    content: content.servicesDescription,
-                    type: "text",
-                    section: "services",
-                    lastModified: new Date().toISOString(),
-                }),
-            ]);
-
+            await ContentService.saveWebsiteContentForm(content);
             toast({
                 title: "Success",
                 description: "Website content saved successfully! Changes are now live on your website.",
             });
-        } catch (error) {
-            console.error("Error saving content:", error);
+        } catch (error: unknown) {
+            const msg =
+                error && typeof error === "object" && "message" in error
+                    ? String((error as { message: string }).message)
+                    : "Failed to save website content. Please try again.";
             toast({
                 title: "Error",
-                description: "Failed to save website content. Please try again.",
+                description: msg,
                 variant: "destructive",
             });
         } finally {
@@ -166,7 +70,7 @@ export default function WebsiteContentPage() {
         }
     };
 
-    const updateField = (field: keyof WebsiteContent, value: string) => {
+    const updateField = (field: keyof WebsiteContentFormState, value: string) => {
         setContent((prev) => ({ ...prev, [field]: value }));
     };
 

@@ -4,7 +4,6 @@ import { HelmetProvider } from 'react-helmet-async';
 import { CartProvider } from './lib/cart';
 import { ContentProvider } from './contexts/ContentContext';
 import { AdminAuthProvider } from './contexts/AdminAuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
 import { useContent } from './contexts/ContentContext';
 import Header from './components/layout/Header';
@@ -22,6 +21,7 @@ import AllCourses from './pages/AllCourses';
 import TrainingAdmin from './components/admin/pages/TrainingAdmin';
 import Gallery from './pages/Gallery';
 import Blog from './pages/Blog';
+import BlogPost from './pages/BlogPost';
 import Contact from './pages/Contact';
 import Services from './pages/Services';
 import Checkout from './pages/Checkout';
@@ -82,41 +82,18 @@ import { WhyMobizillaBest, IPhone15ScreenCost, MacBookReview, KathmanduPriceComp
 // Create a component that pre-loads content
 function AppContent() {
   const [loading, setLoading] = useState(true);
-  const [supabaseReady, setSupabaseReady] = useState(false);
   const { refreshContent } = useContent();
 
   useEffect(() => {
-    // Pre-load content in the background
     const initApp = async () => {
       try {
-        console.log('🚀 Initializing Mobizilla app...');
-
-        // Pre-load content immediately
-        refreshContent().catch(err => {
-          console.log('Content pre-loading failed (will use cache):', err);
+        refreshContent().catch(() => {
+          // Content pre-loading failed (will use cache)
         });
-
-        // Quick Supabase test (non-blocking)
-        setTimeout(async () => {
-          try {
-            const { data, error } = await supabase.from('repair_orders').select('count').limit(1);
-            if (error) {
-              console.log('📋 Supabase table not found - will create when needed');
-            } else {
-              console.log('✅ Supabase connected successfully!');
-            }
-            setSupabaseReady(true);
-          } catch (err) {
-            console.log('🔍 Supabase connection will be tested later');
-            setSupabaseReady(true);
-          }
-        }, 100); // Reduced from 500ms to 100ms
-
       } catch (error) {
-        console.error('❌ App initialization error:', error);
+        console.error('App initialization error:', error);
       } finally {
-        // Always allow app to load quickly
-        setTimeout(() => setLoading(false), 50); // Very fast loading
+        setTimeout(() => setLoading(false), 50);
       }
     };
 
@@ -214,6 +191,7 @@ function AppContent() {
                 <Route path="/training/all" element={<AllCourses />} />
                 <Route path="/training/:id" element={<CourseDetail />} />
                 <Route path="/gallery" element={<Gallery />} />
+                <Route path="/blog/:id" element={<BlogPost />} />
                 <Route path="/blog" element={<Blog />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/services" element={<Services />} />
