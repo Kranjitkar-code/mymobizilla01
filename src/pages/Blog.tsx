@@ -4,8 +4,9 @@ export default function Blog() {
   return (
     <div className="min-h-screen py-20">
       <Helmet>
-        <title>Blog - Mobizilla</title>
-        <meta name="description" content="Latest news, tips, and articles about mobile device care." />
+        <title>Mobile Tech Blog Nepal — Mobizilla</title>
+        <meta name="description" content="Mobile phone tips, repair guides, and tech news from Nepal's leading repair experts at Mobizilla." />
+        <link rel="canonical" href="https://mymobizilla.com/blog" />
       </Helmet>
 
       <div className="container mx-auto px-4">

@@ -176,8 +176,9 @@ export default function Home() {
   return (
     <div className="min-h-screen">
       <Helmet>
-        <title>Mobizilla - Repair, Buy & Sell All Things Mobile</title>
-        <meta name="description" content="AI-assisted diagnostics, genuine parts, and transparent pricing. Your trusted mobile experts." />
+        <title>Mobizilla — Mobile Repair, Buyback & Training Kathmandu Nepal</title>
+        <meta name="description" content="Nepal's #1 mobile repair center. Screen replacement, battery, water damage, buyback, and technician training. Located at Ratna Plaza, New Road, Kathmandu." />
+        <link rel="canonical" href="https://mymobizilla.com/" />
       </Helmet>
 
       {/* Hero Section - Cashify-like with banner carousel */}

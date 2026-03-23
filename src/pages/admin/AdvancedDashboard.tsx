@@ -32,7 +32,7 @@ import {
   Building
 } from 'lucide-react';
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Navigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -80,13 +80,6 @@ interface WebsiteStats {
 }
 
 export default function AdvancedAdminDashboard() {
-  // Check auth immediately on mount - use lazy initialization
-  const [isLoggedIn] = useState(() => {
-    const loggedIn = localStorage.getItem('adminLoggedIn') === 'true';
-    const token = localStorage.getItem('adminToken');
-    return loggedIn && !!token;
-  });
-  
   const [activeTab, setActiveTab] = useState('overview');
   const [editingContent, setEditingContent] = useState<string | null>(null);
   const { content: contentSections, loading, error, refreshContent, updateContent } = useContent();
@@ -252,10 +245,6 @@ export default function AdvancedAdminDashboard() {
       }
     }
   }, []);
-
-  if (!isLoggedIn) {
-    return <Navigate to="/admin/login" replace />;
-  }
 
   const handleLogout = useCallback(() => {
     localStorage.removeItem('adminLoggedIn');

@@ -27,6 +27,7 @@ import {
   Loader2
 } from 'lucide-react';
 import SupabaseBookingService, { type BookingRecord } from '@/services/supabaseBookingService';
+import { SupabaseContactService } from '@/services/supabaseContactService';
 
 interface ContactFormData {
   name: string;
@@ -69,43 +70,40 @@ export default function Contact() {
     setIsSubmitting(true);
 
     try {
-      // Use /api endpoint which works in both dev (proxied to localhost:5003) and production (Netlify function)
-      const apiUrl = import.meta.env.DEV
-        ? 'http://localhost:5003/api/send-contact-email'
-        : '/api/send-contact-email';
-
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          customerName: formData.name,
-          customerEmail: formData.email,
-          customerPhone: formData.phone,
-          service: formData.service,
-          message: formData.message,
-          to: contactEmail,
-        }),
+      await SupabaseContactService.submitMessage({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        interest: formData.service,
+        message: formData.message,
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to send message');
-      }
+      // Also try email notification (non-blocking)
+      try {
+        const apiUrl = import.meta.env.DEV
+          ? 'http://localhost:5003/api/send-contact-email'
+          : '/api/send-contact-email';
+
+        fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customerName: formData.name,
+            customerEmail: formData.email,
+            customerPhone: formData.phone,
+            service: formData.service,
+            message: formData.message,
+            to: contactEmail,
+          }),
+        }).catch(() => {});
+      } catch {}
 
       toast({
-        title: "Message Sent Successfully! ✅",
+        title: "Message Sent Successfully!",
         description: "Thank you for contacting us. We'll get back to you within 24 hours.",
       });
 
-      // Reset form
-      setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        service: '',
-        message: ''
-      });
+      setFormData({ name: '', email: '', phone: '', service: '', message: '' });
     } catch (error) {
       console.error('Contact form error:', error);
       toast({
@@ -205,8 +203,9 @@ export default function Contact() {
   return (
     <div className="min-h-screen bg-slate-50">
       <Helmet>
-        <title>Contact Us - Mobizilla</title>
-        <meta name="description" content="Get in touch with Mobizilla for all your mobile device needs. Professional support, quick response, and quality service guaranteed." />
+        <title>Contact Mobizilla — Phone Repair Service Kathmandu</title>
+        <meta name="description" content="Contact Mobizilla. Location: Ratna Plaza, New Road, Kathmandu. Phone: +977-1-5354999. Open Mon-Sat 9AM-8PM." />
+        <link rel="canonical" href="https://mymobizilla.com/contact" />
       </Helmet>
 
       {/* Hero Section */}

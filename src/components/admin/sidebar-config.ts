@@ -21,7 +21,8 @@ import {
     Zap,
     UserCog,
     Smartphone,
-    Globe
+    Globe,
+    Mail,
 } from 'lucide-react';
 
 export type SidebarItem = {
@@ -50,6 +51,11 @@ export const sidebarConfig: SidebarGroup[] = [
                 title: "Website Content",
                 url: "/admin/website-content",
                 icon: Globe,
+            },
+            {
+                title: "Contact Messages",
+                url: "/admin/contact-messages",
+                icon: Mail,
             },
         ],
     },

@@ -38,11 +38,9 @@ export default function Training() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Helmet>
-        <title>Mobizilla Academy — Mobile Repair Training in Nepal</title>
-        <meta
-          name="description"
-          content="Join Mobizilla Academy for comprehensive mobile repair training in Kathmandu. From basic to advanced chip-level repair, become a certified technician."
-        />
+        <title>Mobile Repair Training Nepal — Mobizilla Academy</title>
+        <meta name="description" content="Learn professional mobile phone repair. Basic to advanced chip-level training. Get certified at Mobizilla Academy, Kathmandu." />
+        <link rel="canonical" href="https://mymobizilla.com/training" />
       </Helmet>
 
       {/* Hero Section */}

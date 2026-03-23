@@ -66,6 +66,7 @@ import AccessorySubCategoriesPage from './components/admin/pages/AccessorySubCat
 import MachinerySubCategoriesPage from './components/admin/pages/MachinerySubCategories';
 import InventoriesPage from './components/admin/pages/Inventories';
 import OrdersPage from './components/admin/pages/Orders';
+import ContactMessagesPage from './components/admin/pages/ContactMessages';
 import SecondhandInventoryPage from './components/admin/pages/SecondhandInventory';
 import PermissionsPage from './components/admin/pages/Permissions';
 import RolesPage from './components/admin/pages/Roles';
@@ -143,6 +144,7 @@ function AppContent() {
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="website-content" element={<WebsiteContentPage />} />
+          <Route path="contact-messages" element={<ContactMessagesPage />} />
 
           {/* Settings Group */}
           <Route path="settings/about-us" element={<AboutUsPage />} />

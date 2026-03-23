@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Navigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,16 +9,6 @@ import SupabasePhonesService, { PhoneModelRow } from '@/services/supabasePhonesS
 import initializeSupabaseSchema from '@/utils/initializeSupabase';
 
 export default function AdminPhones() {
-  const isLoggedIn = useMemo(() => {
-    const loggedIn = localStorage.getItem('adminLoggedIn') === 'true';
-    const token = localStorage.getItem('adminToken');
-    return loggedIn && !!token;
-  }, []);
-
-  if (!isLoggedIn) {
-    return <Navigate to="/admin/login" replace />;
-  }
-
   const [models, setModels] = useState<PhoneModelRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [brand, setBrand] = useState('');

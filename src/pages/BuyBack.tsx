@@ -93,8 +93,9 @@ export default function BuyBack() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-6 sm:py-8 md:py-12 lg:py-20">
       <Helmet>
-        <title>Sell Your Device - Buyback | Mobizilla</title>
-        <meta name="description" content="Sell your old device and get instant quotes at Mobizilla." />
+        <title>Sell Your Old Phone — Mobizilla Buyback Program Nepal</title>
+        <meta name="description" content="Get the best price for your old or broken phone. Mobizilla buyback program: instant quote, fair price, same-day payment in Kathmandu." />
+        <link rel="canonical" href="https://mymobizilla.com/buyback" />
       </Helmet>
 
       <div className="container mx-auto px-4">

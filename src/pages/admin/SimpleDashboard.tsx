@@ -1,39 +1,14 @@
 import { Helmet } from 'react-helmet-async';
-import { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
 
 export default function CMSDashboard() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Check if user is logged in
-    const loggedIn = localStorage.getItem('adminLoggedIn') === 'true';
-    console.log('Admin login status:', loggedIn);
-    setIsLoggedIn(loggedIn);
-    setLoading(false);
-  }, []);
-
   const handleLogout = () => {
     localStorage.removeItem('adminLoggedIn');
     localStorage.removeItem('adminEmail');
     localStorage.removeItem('adminLoginTime');
     window.location.href = '/admin/login';
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading admin dashboard...</div>
-      </div>
-    );
-  }
-
-  if (!isLoggedIn) {
-    return <Navigate to="/admin/login" replace />;
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">

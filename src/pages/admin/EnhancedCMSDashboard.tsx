@@ -22,7 +22,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { Navigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -48,7 +48,6 @@ interface UploadedImage {
 }
 
 export default function CMSDashboard() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [editingContent, setEditingContent] = useState<string | null>(null);
   const { content: contentSections, loading, error, refreshContent, updateContent } = useContent();
@@ -76,9 +75,6 @@ export default function CMSDashboard() {
   const [editedContent, setEditedContent] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const loggedIn = localStorage.getItem('adminLoggedIn') === 'true';
-    setIsLoggedIn(loggedIn);
-    
     // Load uploaded images from localStorage (keeping this as is for now)
     const savedImages = localStorage.getItem('uploadedImages');
     if (savedImages) {
@@ -115,10 +111,6 @@ export default function CMSDashboard() {
     }
   };
 
-  if (!isLoggedIn) {
-    return <Navigate to="/admin/login" replace />;
-  }
-
   const handleLogout = () => {
     // Call backend logout API
     const token = localStorage.getItem('adminToken');
@@ -138,7 +130,6 @@ export default function CMSDashboard() {
     localStorage.removeItem('adminEmail');
     localStorage.removeItem('adminLoginTime');
     localStorage.removeItem('adminToken');
-    setIsLoggedIn(false);
   };
 
   const handleContentEdit = async (sectionId: string, newContent: string) => {

@@ -93,8 +93,9 @@ export default function Repair() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-6 sm:py-8 md:py-12 lg:py-20">
       <Helmet>
-        <title>Professional Device Repair | Mobizilla</title>
-        <meta name="description" content="Expert repair services for phones, tablets, and laptops. Quick turnaround, quality parts, and affordable prices." />
+        <title>Mobile Phone Repair Service Nepal — Mobizilla</title>
+        <meta name="description" content="Professional mobile phone repair in Kathmandu. All brands: iPhone, Samsung, OnePlus, Xiaomi. Cracked screen, battery, water damage, camera repair." />
+        <link rel="canonical" href="https://mymobizilla.com/repair" />
       </Helmet>
 
       <div className="container mx-auto px-4">

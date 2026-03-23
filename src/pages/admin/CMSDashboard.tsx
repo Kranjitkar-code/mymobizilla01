@@ -23,7 +23,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { Navigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -57,7 +57,6 @@ interface UploadedImage {
 }
 
 export default function AdminDashboard() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [editingContent, setEditingContent] = useState<string | null>(null);
   const [contentSections, setContentSections] = useState<ContentSection[]>([]);
@@ -80,9 +79,6 @@ export default function AdminDashboard() {
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
-    const loggedIn = localStorage.getItem('adminLoggedIn') === 'true';
-    setIsLoggedIn(loggedIn);
-    
     // Load content sections from localStorage
     const savedContent = localStorage.getItem('websiteContent');
     if (savedContent) {
@@ -208,15 +204,10 @@ export default function AdminDashboard() {
     }
   }, []);
 
-  if (!isLoggedIn) {
-    return <Navigate to="/admin/login" replace />;
-  }
-
   const handleLogout = () => {
     localStorage.removeItem('adminLoggedIn');
     localStorage.removeItem('adminEmail');
     localStorage.removeItem('adminLoginTime');
-    setIsLoggedIn(false);
   };
 
   const handleContentEdit = (sectionId: string, newContent: string) => {

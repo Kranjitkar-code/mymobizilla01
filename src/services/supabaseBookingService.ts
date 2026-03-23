@@ -62,6 +62,10 @@ export const SupabaseBookingService = {
   async createBooking(data: RepairFormData): Promise<BookingResult> {
     const bookingRef = generateBookingRef();
 
+    const descLower = (data.description || '').toLowerCase();
+    const isBuyback = descLower.includes('service type: buyback') || data.issue === 'DEVICE BUYBACK REQUEST';
+    const serviceType = isBuyback ? 'buyback' : 'repair';
+
     try {
       const { error } = await supabase.from(TABLE).insert({
         customer_name: data.customer_name,
@@ -70,7 +74,7 @@ export const SupabaseBookingService = {
         customer_address: null,
         device_brand: data.brand,
         device_model: data.model,
-        service_type: data.device_category || 'repair',
+        service_type: serviceType,
         issues: data.issue,
         additional_details: data.description ?? null,
         status: 'pending',
